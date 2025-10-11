@@ -1,0 +1,45 @@
+   - Design by committee
+   - Warm bodies
+   - Analysis paralysis
+   - Stovepipe system
+   - Smoke and mirrors
+   - Mushroom management
+   - Death march
+   - Elephant in the room
+   - Boat anchor
+   - Busy waiting
+   - Action at a distance
+   - Caching failure
+   - Accumulate and fire
+   - Code smell
+   - Lava flow
+   - Accidental complexity
+   - Big ball of mud
+   - Blind faith
+   - Code momentum
+   - DLL hell
+   - Vendor lock‑in
+   - Input kludge
+   - Double‑checked locking
+   - Interface bloat
+   - Continuous obsolescence
+   - Abstraction inversion
+   - Kitchen sink
+   - Magic number
+   - God object
+   - Premature optimization
+   - Poltergeist
+   - Feature creep
+   - Yo‑yo problem
+   - Cargo cult programming
+   - Copy and paste programming
+   - Magic pushbutton
+   - Ambiguous viewpoint
+   - Reinventing the wheel
+   - Reinventing the square wheel
+   - Fencepost
+   - Software bloat
+   - Spaghetti code
+   - Hard code
+   - Soft code
+   - Dead end
