@@ -1,5 +1,6 @@
 name: Build and Release
-
+permissions:
+  contents: write       # consente la scrittura di tag e release
 on:
   push:
     tags:
