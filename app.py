@@ -177,7 +177,7 @@ class Pipe:
         top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
         top.fill((*self.color, alpha))
         surf.blit(top, (self.x, 0))
-        font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont("arialunicode", 24) or pygame.font.SysFont(None, 24)
+        font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
         lines = [self.text[i:i+2] for i in range(0, len(self.text), 2)]
         total_h = len(lines) * 24
         start_y = max(5, (self.height - total_h) // 2)
@@ -263,7 +263,7 @@ def draw_score(surf, score):
               (WIDTH-150, 10))
 
 def draw_lives(surf, lives):
-    surf.blit((pygame.font.SysFont("dejavusansmono", 28) or pygame.font.SysFont("arialunicode", 28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
+    surf.blit((pygame.font.SysFont("dejavusansmono", 28) or pygame.font.SysFont("Arial", 28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
               (10, 10))
 
 def draw_level(surf, lvl):
@@ -271,8 +271,8 @@ def draw_level(surf, lvl):
     surf.blit(txt, (10, 50))
 
 def draw_game_over(surf, best, score):
-    font_big   = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("arialunicode", 48) or pygame.font.SysFont(None, 48)
-    font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont("arialunicode", 24) or pygame.font.SysFont(None, 24)
+    font_big   = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("Arial", 48) or pygame.font.SysFont(None, 48)
+    font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
     txt1 = font_big.render("Game Over", True, (255, 0, 0))
     rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 80))
     surf.blit(txt1, rect1)
@@ -287,8 +287,8 @@ def draw_game_over(surf, best, score):
     surf.blit(txt3, rect3)
 
 def draw_win_screen(surf, sc, bonus):
-    font_big = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("arialunicode", 48) or pygame.font.SysFont(None, 48)
-    font_med = pygame.font.SysFont("ubuntumono", 32) or pygame.font.SysFont("arialunicode", 32) or pygame.font.SysFont(None, 32)
+    font_big = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("Arial", 48) or pygame.font.SysFont(None, 48)
+    font_med = pygame.font.SysFont("ubuntumono", 32) or pygame.font.SysFont("Arial", 32) or pygame.font.SysFont(None, 32)
     txt1 = font_big.render("YOU WON!", True, (0, 255, 0))
     rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 100))
     surf.blit(txt1, rect1)
@@ -306,7 +306,7 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     land = pygame.Surface((WIDTH, 50), pygame.SRCALPHA)
     land.fill((*demo_land, DEMO_ALPHA))
     surf.blit(land, (0, HEIGHT-50))
-    font_big = pygame.font.SysFont("ubuntumono", 48, bold=True) or pygame.font.SysFont("arialunicode", 48, bold=True) or pygame.font.SysFont(None, 48, bold=True)
+    font_big = pygame.font.SysFont("ubuntumono", 48, bold=True) or pygame.font.SysFont("Arial", 48, bold=True) or pygame.font.SysFont(None, 48, bold=True)
     title1 = font_big.render("AntiPattern Bird", True, (0, 0, 0))
     title2 = font_big.render("Epic Game", True, (0, 0, 0))
     rect1, rect2 = title1.get_rect(center=(WIDTH//2, HEIGHT//2 - 60)),\
@@ -319,7 +319,7 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     surf.blit(inst, inst.get_rect(center=btn.center))
 
 def draw_pause_overlay(surf):
-    font = pygame.font.SysFont("ubuntumono", 56) or pygame.font.SysFont("arialunicode", 56) or pygame.font.SysFont(None, 56)
+    font = pygame.font.SysFont("ubuntumono", 56) or pygame.font.SysFont("Arial", 56) or pygame.font.SysFont(None, 56)
     txt  = font.render("PAUSE", True, (40, 40, 40))
     rect = txt.get_rect(center=(WIDTH//2, HEIGHT//2 - 20))
     surf.blit(txt, rect)
@@ -328,7 +328,7 @@ def draw_pause_overlay(surf):
     surf.blit(txt2, rect2)
 
 def draw_zebra_active(surf, ms_left):
-    font = pygame.font.SysFont("ubuntumono", 26) or pygame.font.SysFont("arialunicode", 26) or pygame.font.SysFont(None, 26)
+    font = pygame.font.SysFont("ubuntumono", 26) or pygame.font.SysFont("Arial", 26) or pygame.font.SysFont(None, 26)
     txt = font.render(f"ZEBRA SPEED! {max(0, ms_left//1000)}s", True, (255, 0, 0))
     rect = txt.get_rect(center=(WIDTH//2, 30))
     surf.blit(txt, rect)
