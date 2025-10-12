@@ -263,7 +263,7 @@ def draw_score(surf, score):
               (WIDTH-150, 10))
 
 def draw_lives(surf, lives):
-    surf.blit((pygame.font.SysFont("dejavusansmono", 28) or pygame.font.SysFont("Segoe UI Emoji Regular", 28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
+    surf.blit((pygame.font.SysFont("dejavusansmono", 28) or pygame.font.SysFont("Segoe UI Emoji", 28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
               (10, 10))
 
 def draw_level(surf, lvl):
