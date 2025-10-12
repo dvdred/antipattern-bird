@@ -533,6 +533,10 @@ def main():
 
 # --------- UPDATE DEMO ----------
         if not playing and not waiting_restart:
+            for cloud in clouds_layer1:
+                cloud.update()
+            for cloud in clouds_layer2:
+                cloud.update()
             if now - demo_last_pipe > PIPE_FREQ:
                 if now >= rainbow_next:
                     demo_pipes.append(RainbowPipe(WIDTH))
@@ -683,6 +687,10 @@ def main():
                 draw_game_over(WIN, best, score)
             else:
                 draw_start_screen(WIN, demo_pipes, demo_land, start_bg_color)
+                for cloud in clouds_layer1:
+                    cloud.draw(WIN)
+                for cloud in clouds_layer2:
+                    cloud.draw(WIN)
         else:
             WIN.fill(bg_color)
             
