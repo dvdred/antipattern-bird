@@ -316,24 +316,27 @@ def draw_score(surf, score):
               (WIDTH-150, 10))
 
 def draw_lives(surf, lives):
-    surf.blit((pygame.font.Font(font_emoji, size=28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
+    surf.blit((pygame.font.Font(font_emoji, 28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
               (10, 10))
 
 def draw_level(surf, lvl):
     txt = pygame.font.SysFont(None, 32).render(f"Level {lvl}", True, (0,0,0))
     surf.blit(txt, (10, 50))
 
-def draw_game_over(surf, best, score):
+def draw_game_over(surf, best, score, bonus_score):
     font_big   = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("Arial", 48) or pygame.font.SysFont(None, 48)
     font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
     txt1 = font_big.render("Game Over", True, (255, 0, 0))
-    rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 80))
+    rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 120))
     surf.blit(txt1, rect1)
+    txt_scorelvl = font_big.render(f"Bonus: {bonus_score}", True, (0, 0, 0))
+    rect_scorelvl = txt_scorelvl.get_rect(center=(WIDTH//2, HEIGHT//2 - 70))
+    surf.blit(txt_scorelvl, rect_scorelvl)
     txt_score = font_big.render(f"Score: {score}", True, (0, 0, 0))
-    rect_score = txt_score.get_rect(center=(WIDTH//2, HEIGHT//2 - 30))
+    rect_score = txt_score.get_rect(center=(WIDTH//2, HEIGHT//2 - 20))
     surf.blit(txt_score, rect_score)
     txt_best = font_big.render(f"Best: {best}", True, (0, 0, 0))
-    rect_best = txt_best.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))
+    rect_best = txt_best.get_rect(center=(WIDTH//2, HEIGHT//2 + 30))
     surf.blit(txt_best, rect_best)
     txt3 = font_small.render("Press SPACE to restart or Q to quit", True, (0, 0, 0))
     rect3 = txt3.get_rect(center=(WIDTH//2, HEIGHT//2 + 70))
@@ -406,6 +409,7 @@ def main():
     # carica best score
     best = 0   # volatile: non persistente fra esecuzioni
 
+
     tn = 1
     next_life_threshold = 5 * tn * (tn + 1) // 2
 
@@ -426,6 +430,7 @@ def main():
     level_timer      = 0
     speed_lvl        = 1.0
     score_lvl        = 1
+    bonus_score      = 0
 
 # ----- VITTORIA -----
     won            = False
@@ -495,7 +500,7 @@ def main():
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora space finché non sono passati 2 s
                             waiting_restart = False
-                            bird.reset_position(); pipes.clear(); score = 0; lives = 3
+                            bird.reset_position(); pipes.clear(); score = 0; lives = 3; bonus_score=0
                             invuln_time = 0; last_pipe = now; tn = 1
                             next_life_threshold = 5 * tn * (tn + 1) // 2
                             bg_color   = random.choice(LIGHT_COLORS)
@@ -600,52 +605,70 @@ def main():
                     pipes.append(Pipe(WIDTH))
 
             if invuln_time == 0:
+                collided_this_frame = False
+
+                # 1. Collisione con i tubi
                 for p in pipes[:]:
                     if p.collide(bird):
-                        lives -= 1
-                        invuln_time = INVULN_MS
-                        bird.reset_position()
-                        if S_LIFEDOWN:
-                            S_LIFEDOWN.play()
-                        if lives <= 0:
-                            playing = False
-                            waiting_restart = True
-                            game_over_start = now
-                            # bonus livello
-                            lvl_bonus = 0
-                            if speed_lvl >= 2.0:     # livello 2
-                                lvl_bonus = 15
-                            if speed_lvl >= 3.0:     # livello 3
-                                lvl_bonus = 30
-                            score += lvl_bonus
-                            if score > best:
-                                best = score
+                        collided_this_frame = True
                         break
+                
+                # 2. Collisione con pavimento/soffitto
+                if not collided_this_frame and (bird.y >= HEIGHT - 50 - bird.size or bird.y <= 0):
+                    collided_this_frame = True
 
-            if invuln_time == 0:
-                for p in pipes:
-                    if not p.passed and p.x + PIPE_W < bird.x:
-                        p.passed = True
-                        pts = 1
-                        if getattr(p, 'is_rainbow', False):
-                            pts = RAINBOW_POINTS
-                            flash_until = now + FLASH_MS
-                            S_RAINBOW.play()
-                        elif getattr(p, 'is_zebra', False):
-                            pts = 2
-                            zebra_until = now + ZEBRA_DURATION_MS
-                            flash_until = now + FLASH_MS
-                            S_RAINBOW.play()
-                        else:
-                            S_POINT.play()
-                        pts *= score_lvl
-                        if now < zebra_until:
-                            pts *= ZEBRA_POINTS_MULT
-                        score += int(pts)
+                # Se è avvenuta una collisione di qualsiasi tipo, applica le penalità
+                if collided_this_frame:
+                    lives -= 1
+                    invuln_time = INVULN_MS
+                    bird.reset_position()
+                    if S_LIFEDOWN:
+                        S_LIFEDOWN.play()
+                    if lives <= 0:
+                        playing = False
+                        waiting_restart = True
+                        game_over_start = now
+                        
+                        # Calcolo bonus di fine partita
+                        lvl_bonus = 0
+                        if speed_lvl >= 2.0:   # Raggiunto il Livello 3
+                            lvl_bonus = 30
+                        elif speed_lvl >= 1.5: # Raggiunto il Livello 2
+                            lvl_bonus = 15
+                        score += lvl_bonus
+                        bonus_score += lvl_bonus
+
                         if score > best:
                             best = score
-                        break
+                
+                # 3. Se NON c'è stata collisione, controlla per il punteggio
+                else:
+                    for p in pipes:
+                        if not p.passed and p.x + PIPE_W < bird.x:
+                            p.passed = True
+                            pts = 1
+                            if getattr(p, 'is_rainbow', False):
+                                pts = RAINBOW_POINTS
+                                flash_until = now + FLASH_MS
+                                S_RAINBOW.play()
+                            elif getattr(p, 'is_zebra', False):
+                                pts = 2
+                                zebra_until = now + ZEBRA_DURATION_MS
+                                flash_until = now + FLASH_MS
+                                S_RAINBOW.play()
+                            else:
+                                S_POINT.play()
+                            
+                            pts *= score_lvl
+                            if now < zebra_until: # La zebra mode è attiva dopo aver passato un tubo zebra
+                                pts *= ZEBRA_POINTS_MULT
+                            
+                            score += int(pts)
+                            if score > best:
+                                best = score
+                            break # Assegna punti solo per un tubo alla volta
 
+            # Gestione punti vita extra
             if score >= next_life_threshold:
                 if lives < MAX_LIVES:
                     lives += 1
@@ -654,14 +677,7 @@ def main():
                 tn += 1
                 next_life_threshold = 5 * tn * (tn + 1) // 2
 
-            if bird.y > HEIGHT - 50 or bird.y < 0:
-                if invuln_time == 0:
-                    lives -= 1; invuln_time = INVULN_MS; bird.reset_position()
-                    if S_LIFEDOWN:
-                        S_LIFEDOWN.play()
-                    if lives <= 0:
-                        playing = False; waiting_restart = True
-
+            # Aggiorna posizione tubi (fuori dal blocco di collisione)
             for p in pipes[:]:
                 p.update(speed=int(cur_speed))
                 if p.x + PIPE_W < 0:
@@ -684,7 +700,7 @@ def main():
                     cloud.draw(WIN)
                 bird.reset_position()
                 bird.randomize_shape(exclude_current=True)
-                draw_game_over(WIN, best, score)
+                draw_game_over(WIN, best, score, bonus_score)
             else:
                 draw_start_screen(WIN, demo_pipes, demo_land, start_bg_color)
                 for cloud in clouds_layer1:
