@@ -1,5 +1,7 @@
 # antipattern-bird
 Simple python Game (Flappy Bird Like)
+![Intro](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo0.png)
+![Game](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo1.png)
 
 An addictive, Python-powered Flappy-style mini-game with rainbow & zebra power-ups, lives system and 4-min speed-run victory.
 
@@ -61,9 +63,15 @@ Score: 42      ❤ ❤ ❤      Level 1
 - **Level** - auto-scaling difficulty (1→2→3 based on elapsed time)
 
 **Earning points** (all values are multiplied by the current Level)
-* 1 pt - pass a normal green/brown pipe  
+* 1 pt - pass a normal pipe  
 * 2 pt - pass the black-&-white ZEBRA pipe  
-* 3 pt - pass the RAINBOW pipe  
+* 3 pt - pass the RAINBOW pipe
+
+**Extra points** (Loosing or Winning the game)
+* 15 pt - Ending at lvl 2
+* 30 pt - Ending at lvl 3
+* 50 pt - Winning the Game
+* 100 pt - Winning the Game with all Lives  
 
 **Special pipes**
 RAINBOW (coloured stripes)  
@@ -83,6 +91,6 @@ Every triangular-number target (5 - 15 - 30 - 50 - 75 ...) awards +1 life (up to
 |------|--------|
 | 90 s | Level 2 - scroll speed ↑ |
 | 150 s | Level 3 - scroll speed ↑↑ |
-| 240 s | YOU WIN! +50 pts (+100 if you still have 6 lives) |
+| 240 s | YOU WIN! |
 
 Good luck, and keep flapping!
