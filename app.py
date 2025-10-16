@@ -12,7 +12,8 @@ import time
 pygame.init()
 pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
 WIDTH, HEIGHT = 500, 750
-WIN = pygame.display.set_mode((WIDTH, HEIGHT))
+SCREEN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE) # finestra ridimensionabile
+WIN = pygame.Surface((WIDTH, HEIGHT)) # surface logica su cui continui a disegnare
 pygame.display.set_caption("AntiPattern Bird Epic Game")
 
 def get_resource_path(relative_path):
@@ -418,6 +419,31 @@ def draw_zebra_active(surf, ms_left):
     txt = font.render(f"ZEBRA SPEED! {max(0, ms_left//1000)}s", True, (255, 0, 0))
     rect = txt.get_rect(center=(WIDTH//2, 40))
     surf.blit(txt, rect)
+
+def present(surf):
+    # surf è la surface logica (WIN) 500x750
+    screen = pygame.display.get_surface()
+    sw, sh = screen.get_size()
+
+    # calcola fattore di scala mantenendo l'aspect ratio
+    scale = min(sw / WIDTH, sh / HEIGHT)
+    new_w, new_h = max(1, int(WIDTH * scale)), max(1, int(HEIGHT * scale))
+
+    # ridimensiona (smoothscale per qualità; usa scale se vuoi più performance)
+    if new_w == WIDTH and new_h == HEIGHT:
+        scaled = surf
+    else:
+        try:
+            scaled = pygame.transform.smoothscale(surf, (new_w, new_h))
+        except pygame.error:
+            scaled = pygame.transform.scale(surf, (new_w, new_h))
+
+    # letterbox: riempi tutto lo schermo (nero) e centra l'immagine scalata
+    screen.fill((0, 0, 0))
+    ox = (sw - new_w) // 2
+    oy = (sh - new_h) // 2
+    screen.blit(scaled, (ox, oy))
+    pygame.display.flip()
 # ==============================================================
 #                          MAIN
 # ==============================================================
@@ -564,6 +590,9 @@ def main():
                                                       bird.y + bird.size))
                     elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                         running = False
+                    elif event.type == pygame.VIDEORESIZE:
+                        pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+
 # ------------- fine input -------------
 
 # --------- UPDATE DEMO ----------
@@ -771,7 +800,7 @@ def main():
             flash.fill((*FLASH_COLOR, int(alpha)))   
             WIN.blit(flash, (0, 0))
 
-        pygame.display.flip()
+        present(WIN)
 
     pygame.quit()
     sys.exit()
