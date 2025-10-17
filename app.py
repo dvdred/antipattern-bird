@@ -103,7 +103,7 @@ WIN_TIME = 240_000   # 4 minuti
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
-DEBUG_MODE = True
+DEBUG_MODE = False
 FLASH_MS = 150
 FLASH_COLOR = (255,255,255)
 
@@ -438,7 +438,7 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     pygame.draw.rect(surf, (70, 130, 180), btn, border_radius=10)
     surf.blit(inst, inst.get_rect(center=btn.center))
 
-def draw_shape_selection_menu(surf, bg_color, current_shape, current_color):
+def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode):
     surf.fill(bg_color)
     
     font_title = pygame.font.SysFont("ubuntumono", 40, bold=True) or pygame.font.SysFont(None, 40)
@@ -549,13 +549,29 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color):
         
         color_buttons.append((btn, color_id))
     
-    # Istruzioni
+    # ============ DEBUG MODE: Bottone compatto in alto a destra ============
+    debug_btn = pygame.Rect(WIDTH - 160, 100, 150, 35)
+    debug_color = (200, 50, 50) if debug_mode else (100, 100, 100)
+    pygame.draw.rect(surf, debug_color, debug_btn, border_radius=8)
+    
+    debug_status = "ON" if debug_mode else "OFF"
+    # Usa il font emoji come per i cuori
+    font_debug = pygame.font.Font(font_emoji, 18) or font_small  # <-- CAMBIATO
+    debug_txt = font_debug.render(f"⚙️ Debug: {debug_status}", True, (255, 255, 255))
+    surf.blit(debug_txt, debug_txt.get_rect(center=debug_btn.center))
+    
+    # Tasto D sopra il bottone
+    letter_txt = font_number.render("D", True, (0, 0, 0))
+    surf.blit(letter_txt, (debug_btn.centerx - 7, debug_btn.top - 25))
+    # =======================================================================
+    
+    # Istruzioni (spostate più in alto)
     hint1 = font_small.render("Use numbers/letters or click to select", True, (100, 100, 100))
     surf.blit(hint1, hint1.get_rect(center=(WIDTH//2, HEIGHT - 40)))
     hint2 = font_small.render("Press SPACE to start", True, (100, 100, 100))
     surf.blit(hint2, hint2.get_rect(center=(WIDTH//2, HEIGHT - 20)))
     
-    return shape_buttons, color_buttons
+    return shape_buttons, color_buttons, debug_btn  # <-- RESTITUISCE ANCHE debug_btn
 
 def draw_pause_overlay(surf):
     font = pygame.font.SysFont("ubuntumono", 56) or pygame.font.SysFont("Arial", 56) or pygame.font.SysFont(None, 56)
@@ -639,6 +655,7 @@ def main():
     running, playing = True, False
     waiting_restart  = False
     selecting_shape = False
+    debug_mode = False
     
     # Selezioni correnti nel menu (quelle evidenziate)
     current_shape_selection = 'random'
@@ -655,6 +672,7 @@ def main():
     # Liste dei bottoni (persistenti tra i frame)
     shape_buttons = []
     color_buttons = []
+    debug_btn = pygame.Rect(0, 0, 0, 0)
     invuln_time, last_pipe = 0, pygame.time.get_ticks()
     game_over_start = 0   # timestamp game-over
 
@@ -756,6 +774,9 @@ def main():
                     if btn.collidepoint(log_x, log_y):
                         current_color_selection = color_id
                         break
+                # Controlla click su debug mode  # <-- NUOVO
+                if debug_btn.collidepoint(log_x, log_y):
+                    debug_mode = not debug_mode
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p and playing and not waiting_restart:
                     paused = not paused
@@ -861,7 +882,9 @@ def main():
                             current_color_selection = 'green'
                         elif event.key == pygame.K_t:
                             current_color_selection = 'random'
-                        
+                        # Toggle Debug Mode
+                        elif event.key == pygame.K_d:
+                            debug_mode = not debug_mode
                         # Conferma con SPACE
                         elif event.key == pygame.K_SPACE:
                             # Salva le selezioni confermate
@@ -1080,9 +1103,9 @@ def main():
                 bird.randomize_shape(exclude_current=True)
                 bird.randomize_color(exclude_current=True)
                 draw_game_over(WIN, best, score, bonus_score)
-            elif selecting_shape:  # <-- AGGIUNTO
-                new_shape_btns, new_color_btns = draw_shape_selection_menu(
-                    WIN, bg_color, current_shape_selection, current_color_selection
+            elif selecting_shape:
+                new_shape_btns, new_color_btns, debug_btn = draw_shape_selection_menu(
+                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode
                 )
                 shape_buttons = new_shape_btns
                 color_buttons = new_color_btns
@@ -1114,7 +1137,7 @@ def main():
                 p.draw(WIN)
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
-            if DEBUG_MODE:  # <-- NUOVO BLOCCO
+            if debug_mode:  # <-- NUOVO BLOCCO
                 draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed)
 
         if paused:
