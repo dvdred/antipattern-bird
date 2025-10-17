@@ -123,16 +123,17 @@ TEXT_LIST = [
 ]
 
 class Particle:
-    def __init__(self, x, y):
+    def __init__(self, x, y, color=(255, 255, 255)):
         self.x, self.y = x, y
         self.vx = random.uniform(-2, 2)
         self.vy = random.uniform(-2, 0)
         self.life = 30
+        self.color = color  # <-- AGGIUNTO
     def update(self):
         self.x += self.vx; self.y += self.vy; self.life -= 1
     def draw(self, surf):
         if self.life > 0:
-            pygame.draw.circle(surf, (255, 255, 255),
+            pygame.draw.circle(surf, self.color,  # <-- MODIFICATO (era (255, 255, 255))
                                (int(self.x), int(self.y)), 3)
 
 class Cloud:
@@ -541,14 +542,18 @@ def main():
                     break
                 if waiting_restart:
                     # distinguiamo vittoria da game over
-                    if won_waiting:
+                    if won_waiting: # Vittoria
                         if event.key == pygame.K_SPACE:
                             won_waiting = False
                             playing = True
                             bird.reset_position()
                             zebra_next_min = now + 60_000
                             base_speed = min(6, base_speed + 0.5)
-                            pipes.clear()          # <- bug fix
+                            pipes.clear()
+                            level_timer = 0
+                            won = False
+                            speed_lvl = 1.0
+                            score_lvl = 1
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                             running = False
                     else:  # game over normale
@@ -587,7 +592,8 @@ def main():
                         bird.jump()
                         for _ in range(5):
                             particles.append(Particle(bird.x + bird.size//2,
-                                                      bird.y + bird.size))
+                                                    bird.y + bird.size,
+                                                    bird.color))  # <-- AGGIUNTO bird.color
                     elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                         running = False
                     elif event.type == pygame.VIDEORESIZE:
