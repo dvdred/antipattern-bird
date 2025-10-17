@@ -152,27 +152,58 @@ class Cloud:
         self.opacity    = random.randint(70, 160)           # più tenue
         self.palette    = random.choice(self.PALETTES)
 
-        # 4-8 "bolle" casuali
-        bubbles = random.randint(4, 8)
+        # Crea una nuvola più realistica con cerchi sovrapposti
         self.bubbles = []
-        for _ in range(bubbles):
-            offx = random.randint(-self.size // 2, self.size)
-            offy = random.randint(-self.size // 3, self.size // 3)
-            r    = random.randint(self.size // 4, self.size // 2)
-            col  = random.choice(self.palette) + (self.opacity,)
+        base_r = self.size // 2  # raggio base
+        
+        # Cerchio centrale (più grande)
+        col = random.choice(self.palette) + (self.opacity,)
+        self.bubbles.append((0, 0, int(base_r * 1.2), col))
+        
+        # Cerchi laterali (sinistra e destra)
+        num_side = random.randint(2, 3)
+        for i in range(num_side):
+            # Lato sinistro
+            offx = -base_r + random.randint(-10, 10)
+            offy = random.randint(-base_r // 3, base_r // 3)
+            r = int(base_r * random.uniform(0.7, 1.0))
+            col = random.choice(self.palette) + (self.opacity,)
+            self.bubbles.append((offx, offy, r, col))
+            
+            # Lato destro
+            offx = base_r + random.randint(-10, 10)
+            offy = random.randint(-base_r // 3, base_r // 3)
+            r = int(base_r * random.uniform(0.7, 1.0))
+            col = random.choice(self.palette) + (self.opacity,)
+            self.bubbles.append((offx, offy, r, col))
+        
+        # Cerchi superiori (per dare volume)
+        num_top = random.randint(1, 2)
+        for i in range(num_top):
+            offx = random.randint(-base_r // 2, base_r // 2)
+            offy = -base_r // 2 + random.randint(-5, 5)
+            r = int(base_r * random.uniform(0.6, 0.9))
+            col = random.choice(self.palette) + (self.opacity,)
             self.bubbles.append((offx, offy, r, col))
 
         # bounding-box superficie
         max_right  = max(offx + r for offx, _, r, _ in self.bubbles) + 5
         max_bottom = max(offy + r for _, offy, r, _ in self.bubbles) + 5
-        self.surf_w, self.surf_h = max_right, max_bottom
+        min_left   = min(offx - r for offx, _, r, _ in self.bubbles)
+        min_top    = min(offy - r for _, offy, r, _ in self.bubbles)
+        
+        self.surf_w = max_right - min_left + 10
+        self.surf_h = max_bottom - min_top + 10
+        self.offset_x = -min_left + 5
+        self.offset_y = -min_top + 5
+        
         self.surface = pygame.Surface((self.surf_w, self.surf_h), pygame.SRCALPHA)
         self._render_shape()
 
     def _render_shape(self):
         for offx, offy, r, col in self.bubbles:
-            cx = self.size // 2 + offx
-            cy = self.size // 2 + offy
+            cx = self.offset_x + offx
+            cy = self.offset_y + offy
             pygame.draw.circle(self.surface, col, (cx, cy), r)
 
     def update(self):
