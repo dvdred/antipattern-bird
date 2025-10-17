@@ -103,7 +103,7 @@ WIN_TIME = 240_000   # 4 minuti
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
-
+DEBUG_MODE = True
 FLASH_MS = 150
 FLASH_COLOR = (255,255,255)
 
@@ -572,6 +572,36 @@ def draw_zebra_active(surf, ms_left):
     rect = txt.get_rect(center=(WIDTH//2, 40))
     surf.blit(txt, rect)
 
+def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed):  # <-- NUOVA FUNZIONE
+    """Mostra informazioni di debug sulla velocità"""
+    font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
+    
+    # Background semi-trasparente
+    debug_bg = pygame.Surface((250, 90), pygame.SRCALPHA)
+    debug_bg.fill((0, 0, 0, 180))
+    surf.blit(debug_bg, (10, HEIGHT - 150))
+    
+    # Informazioni
+    y_offset = HEIGHT - 145
+    
+    txt1 = font_debug.render(f"DEBUG MODE", True, (255, 255, 0))
+    surf.blit(txt1, (15, y_offset))
+    
+    txt2 = font_debug.render(f"Base Speed: {base_speed:.1f}", True, (255, 255, 255))
+    surf.blit(txt2, (15, y_offset + 20))
+    
+    txt3 = font_debug.render(f"Level Mult: {speed_lvl:.1f}x", True, (255, 255, 255))
+    surf.blit(txt3, (15, y_offset + 40))
+    
+    zebra_mult = SPEED_MULTIPLIER if zebra_active else 1.0
+    color_zebra = (255, 100, 100) if zebra_active else (255, 255, 255)
+    txt4 = font_debug.render(f"Zebra Mult: {zebra_mult:.1f}x", True, color_zebra)
+    surf.blit(txt4, (15, y_offset + 60))
+    
+    # Velocità finale evidenziata
+    txt5 = font_debug.render(f"→ SPEED: {cur_speed:.2f}", True, (0, 255, 0))
+    surf.blit(txt5, (140, y_offset + 20))
+
 def present(surf):
     # surf è la surface logica (WIN) 500x750
     screen = pygame.display.get_surface()
@@ -775,6 +805,7 @@ def main():
                                 bird.color = BIRD_COLORS[3]
                             
                             pipes.clear(); score = 0; lives = 3; bonus_score=0
+                            base_speed = 3  # <-- RESET velocità base dopo game over
                             invuln_time = 0; last_pipe = now; tn = 1
                             next_life_threshold = 5 * tn * (tn + 1) // 2
                             bg_color   = random.choice(LIGHT_COLORS)
@@ -798,6 +829,7 @@ def main():
                             score = 0
                             lives = 3
                             bonus_score = 0
+                            base_speed = 3
                             won = False
                             won_waiting = False    
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
@@ -1082,6 +1114,8 @@ def main():
                 p.draw(WIN)
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
+            if DEBUG_MODE:  # <-- NUOVO BLOCCO
+                draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed)
 
         if paused:
             draw_pause_overlay(WIN)
