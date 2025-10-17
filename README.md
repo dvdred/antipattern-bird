@@ -2,9 +2,10 @@
 Simple python Game (Flappy Bird Like)
 
 ![Intro](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo0.png)
-![Game](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo1.png)
+![Options](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo1.png)
+![Game](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo2.png)
 
-An addictive, Python-powered Flappy-style mini-game with rainbow & zebra power-ups, lives system and 4-min speed-run victory.
+An addictive, Python-powered Flappy-style mini-game with rainbow & zebra power-ups, customizable bird, lives system and 4-min speed-run victory.
 
 ## Quick Start
 
@@ -48,14 +49,40 @@ Survive and score as many points as you can until you either:
 - run out of lives ❤, or
 - pass the 4-minute mark to unlock the WIN screen
 
-**Controls** (keyboard)
+### Character Customization
+
+Before each game, you'll see a **customization menu** where you can choose:
+
+**Shape Selection** (keyboard numbers `1-5` or mouse click)
+- `1` - Square
+- `2` - Circle  
+- `3` - Triangle
+- `4` - Diamond
+- `5` - Random (changes every game over)
+
+**Color Selection** (keyboard letters or mouse click)
+- `Q` - Saffron (yellow-orange)
+- `W` - Coral (orange-red)
+- `E` - Royal Blue
+- `R` - Forest Green
+- `T` - Random (changes every game over)
+
+Press `SPACE` to confirm and start the game with your chosen appearance!
+
+> **Note**: Your selection is remembered during the current session. After winning, you'll return to this menu to customize again with increased difficulty.
+
+### In-Game Controls
+
 | Key | Action |
 |-----|--------|
-| `SPACE` (hold to flap) | Jump up |
+| `SPACE` (tap or hold) | Jump / Flap |
 | `P` | Pause / Resume |
-| `Q` or `ESC` inside menus or pause | Quit to desktop |
+| `Q` or `ESC` | Quit to desktop |
 
-**What you see**
+The game window is **resizable** - drag the corners to adjust the size while maintaining the correct aspect ratio.
+
+### Game Interface
+
 ```
 Score: 42      ❤ ❤ ❤      Level 1
 ```
@@ -64,34 +91,99 @@ Score: 42      ❤ ❤ ❤      Level 1
 - **Level** - auto-scaling difficulty (1→2→3 based on elapsed time)
 
 **Earning points** (all values are multiplied by the current Level)
-* 1 pt - pass a normal pipe  
-* 2 pt - pass the black-&-white ZEBRA pipe  
-* 3 pt - pass the RAINBOW pipe
+* **1 pt** - pass a normal pipe (with AntiPattern names)
+* **2 pt** - pass the black-&-white **ZEBRA** pipe  
+* **3 pt** - pass the **RAINBOW** pipe
 
-**Extra points** (Loosing or Winning the game)
-* 15 pt - Ending at lvl 2
-* 30 pt - Ending at lvl 3
-* 50 pt - Winning the Game
-* 100 pt - Winning the Game with all Lives  
+**Bonus points** (awarded at Game Over or Victory)
+* **15 pt** - Reached Level 2
+* **30 pt** - Reached Level 3
+* **50 pt** - Won the game (survived 4 minutes)
+* **+100 pt** - Won with maximum lives (6❤)
 
-**Special pipes**
-RAINBOW (coloured stripes)  
-- grants instant 3 pts  
-- shows a white flash and a happy "bling" sound
+### Special Pipes
 
-ZEBRA (black/white halves)  
-- grants 2 pts  
-- starts ZEBRA-SPEED mode: everything scrolls 1.5× faster for 8 s  
-- during those 8 s every pipe you pass is worth double (×2)
+**🌈 RAINBOW** (vertical colored stripes)  
+- Grants instant **3 pts** × level multiplier
+- Triggers a white flash and cheerful "bling" sound
+- Appears randomly every 20-45 seconds
 
-**Extra life**  
-Every triangular-number target (5 - 15 - 30 - 50 - 75 ...) awards +1 life (up to 6).
+**🦓 ZEBRA** (black/white vertical stripes)  
+- Grants **2 pts** × level multiplier
+- Activates **ZEBRA-SPEED mode** for 8 seconds:
+  - Everything scrolls **1.5× faster**
+  - All points earned are **doubled** (×2)
+  - A countdown timer appears at the top
+- Appears once per minute
 
-**Time milestones**
-| Time | Effect |
-|------|--------|
-| 90 s | Level 2 - scroll speed ↑ |
-| 150 s | Level 3 - scroll speed ↑↑ |
-| 240 s | YOU WIN! |
+### Extra Lives
 
-Good luck, and keep flapping!
+Every triangular-number score target awards **+1 life** (up to maximum 6):
+- 5, 15, 30, 50, 75, 105, 140, 180, 225...
+
+When you collect a life, you'll hear a happy "power-up" sound! 🎵
+
+### Level Progression
+
+The game automatically increases difficulty based on time survived:
+
+| Time | Level | Effect |
+|------|-------|--------|
+| 0-90s | Level 1 | Base scroll speed |
+| 90-150s | Level 2 | 1.5× speed, 1.5× points |
+| 150-240s | Level 3 | 2× speed, 2× points |
+| **240s** | **VICTORY!** | Win screen + bonus points |
+
+### Victory & Progressive Difficulty
+
+When you reach the **4-minute mark**:
+1. You see the **WIN screen** with your score and bonuses
+2. Press `SPACE` to return to the **customization menu**
+3. The next game will have **+0.5 base speed** (stacks up to 6.0×)
+4. This creates an endless challenge for skilled players!
+
+## Visual Features
+
+- **Animated clouds** - Two layers of procedurally-generated clouds drift across the sky at different speeds
+- **Colored particles** - Your bird leaves a trail of particles matching its color when jumping
+- **Dynamic backgrounds** - Randomized pastel skies and ground colors for each game
+- **Invulnerability flash** - After losing a life, your bird blinks for 2 seconds
+- **Smooth scaling** - Resize the window freely without distortion
+
+## Tips & Tricks
+
+1. **Save zebra pipes for hard moments** - The speed boost is challenging but doubles your points!
+2. **Plan ahead** - Rainbow pipes are worth 3× your level multiplier (9 pts at Level 3!)
+3. **Learn the rhythm** - Each level has a consistent scroll speed - find your timing
+4. **Don't panic after hits** - You have 2 seconds of invulnerability to reposition
+5. **Mix it up** - Try different bird shapes - they have slightly different visual hitboxes!
+
+## Sound Effects
+
+- 🐦 Flap/Jump
+- ⭐ Point scored  
+- 🌈 Rainbow/Zebra collected
+- ❤️ Life gained
+- 💔 Life lost
+
+> Sounds play at 90% volume by default. Make sure your system volume is comfortable!
+
+## Technical Features
+
+- Built with **Pygame** (Python)
+- **60 FPS** game loop
+- Runs on Windows, Linux, and macOS (no binary)
+- Standalone executables available (PyInstaller)
+- Fully resizable window with letterboxing
+- Pause functionality maintains game state
+
+## Credits
+
+- **Made with 💜 by** dvdred@gmail.com  
+- **License**: GPL3  
+- **Font**: DejaVu Sans Mono (for emoji support)
+- **AntiPattern names** inspired by software engineering anti-patterns
+
+---
+
+Good luck, customize your bird, and keep flapping! 🐦✨
