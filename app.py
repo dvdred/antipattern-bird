@@ -588,35 +588,42 @@ def draw_zebra_active(surf, ms_left):
     rect = txt.get_rect(center=(WIDTH//2, 40))
     surf.blit(txt, rect)
 
-def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed):  # <-- NUOVA FUNZIONE
-    """Mostra informazioni di debug sulla velocità"""
+def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed, game_time_ms):
+    """Mostra informazioni di debug sulla velocità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
     
-    # Background semi-trasparente
-    debug_bg = pygame.Surface((250, 90), pygame.SRCALPHA)
+    # Background semi-trasparente (aumentato per fare spazio al tempo)
+    debug_bg = pygame.Surface((250, 110), pygame.SRCALPHA)
     debug_bg.fill((0, 0, 0, 180))
-    surf.blit(debug_bg, (10, HEIGHT - 150))
+    surf.blit(debug_bg, (10, HEIGHT - 170))
     
     # Informazioni
-    y_offset = HEIGHT - 145
+    y_offset = HEIGHT - 165
     
     txt1 = font_debug.render(f"DEBUG MODE", True, (255, 255, 0))
     surf.blit(txt1, (15, y_offset))
     
+    # Tempo di gioco (converti ms in mm:ss)
+    total_seconds = game_time_ms // 1000
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+    txt_time = font_debug.render(f"Game Time: {minutes:02d}:{seconds:02d}", True, (100, 200, 255))
+    surf.blit(txt_time, (15, y_offset + 20))
+    
     txt2 = font_debug.render(f"Base Speed: {base_speed:.1f}", True, (255, 255, 255))
-    surf.blit(txt2, (15, y_offset + 20))
+    surf.blit(txt2, (15, y_offset + 40))
     
     txt3 = font_debug.render(f"Level Mult: {speed_lvl:.1f}x", True, (255, 255, 255))
-    surf.blit(txt3, (15, y_offset + 40))
+    surf.blit(txt3, (15, y_offset + 60))
     
     zebra_mult = SPEED_MULTIPLIER if zebra_active else 1.0
     color_zebra = (255, 100, 100) if zebra_active else (255, 255, 255)
     txt4 = font_debug.render(f"Zebra Mult: {zebra_mult:.1f}x", True, color_zebra)
-    surf.blit(txt4, (15, y_offset + 60))
+    surf.blit(txt4, (15, y_offset + 80))
     
     # Velocità finale evidenziata
     txt5 = font_debug.render(f"SPEED: {cur_speed:.2f}", True, (0, 255, 0))
-    surf.blit(txt5, (140, y_offset + 20))
+    surf.blit(txt5, (160, y_offset + 40))
 
 def present(surf):
     # surf è la surface logica (WIN) 500x750
@@ -1161,8 +1168,8 @@ def main():
                 p.draw(WIN)
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
-            if debug_mode:  # <-- NUOVO BLOCCO
-                draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed)
+            if debug_mode:
+                draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed, level_timer)
 
         if paused:
             draw_pause_overlay(WIN)

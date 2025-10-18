@@ -67,6 +67,9 @@ Before each game, you'll see a **customization menu** where you can choose:
 - `R` - Forest Green
 - `T` - Random (changes every game over)
 
+**DEBUG mode** (keyboard letters or mouse click)
+- `D` - Debug Overly (info about game realtime)
+
 Press `SPACE` to confirm and start the game with your chosen appearance!
 
 > **Note**: Your selection is remembered during the current session. After winning, you'll return to this menu to customize again with increased difficulty.
@@ -176,6 +179,7 @@ When you reach the **4-minute mark**:
 - Standalone executables available (PyInstaller)
 - Fully resizable window with letterboxing
 - Pause functionality maintains game state
+- Debug Overlay
 
 ## Credits
 
