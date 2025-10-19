@@ -1,0 +1,60 @@
+name: Build executables
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - run: >
+          pyinstaller --onefile ^
+            --add-data "icon32.png;." ^
+            --add-data "jump.wav;." ^
+            --add-data "lifedown.wav;." ^
+            --add-data "lifeup.wav;." ^
+            --add-data "point.wav;." ^
+            --add-data "rainbow.wav;." ^
+            --name antipattern-bird app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antipattern-bird-win-x64
+          path: dist/antipattern-bird.exe
+
+
+  build-linux:
+    runs-on: ubuntu-latest          # 64 bit di default
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - run: >
+          pyinstaller --onefile
+          --add-data "icon32.png:."
+          --add-data "jump.wav:."
+          --add-data "lifedown.wav:."
+          --add-data "lifeup.wav:."
+          --add-data "point.wav:."
+          --add-data "rainbow.wav:."
+          --name antipattern-bird app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antipattern-bird-linux-x64
+          path: dist/antipattern-bird
