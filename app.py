@@ -45,9 +45,26 @@ for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN):
 
 LIGHT_COLORS = [(173, 216, 230), (175, 238, 238), (255, 218, 185),
                 (230, 230, 250), (240, 248, 255)]
+BIRD_COLORS  = [(180, 0, 0), (210, 205, 15), (48, 138, 48),
+                (55, 40, 255), (75, 0, 130)]                
 DARK_COLORS  = [(0, 0, 0), (139, 0, 0), (85, 107, 47),
                 (72, 61, 139), (25, 25, 112)]
-PIPE_COLORS  = [(0,100,0), (139,69,19), (64,64,64)]
+PIPE_COLORS = [
+    (0, 100, 0),     # 1
+    (139, 69, 19),   # 2
+    (64, 64, 64),    # 3
+    (139, 0, 0),     # 4
+    (85, 107, 47),   # 5
+    (72, 61, 139),   # 6
+    (25, 25, 112),   # 7
+    (0, 0, 139),     # 8
+    (47, 79, 79),    # 9
+    (34, 139, 34),   #10
+    (105, 105, 105), #11
+    (70, 130, 180),  #12
+    (0, 139, 139),   #13
+    (160, 82, 45)    #14
+]
 LAND_COLORS  = [(101,67,33), (204,204,0)]
 
 GRAVITY   = 0.25
@@ -166,7 +183,7 @@ class Bird:
         self.vel = 0
         self.size = 30
         self.shape = random.choice(['square', 'circle', 'triangle', 'diamond'])
-        self.color = random.choice(DARK_COLORS)
+        self.color = random.choice(BIRD_COLORS)
         self.alpha = 255
 
     def reset_position(self):
@@ -212,6 +229,12 @@ class Bird:
         if exclude_current and self.shape in shapes:
             shapes.remove(self.shape)
         self.shape = random.choice(shapes)
+
+    def randomize_color(self, exclude_current=True):
+        colors = random.choice(BIRD_COLORS)
+        if exclude_current and self.color in colors:
+            shapes.remove(self.color)
+        self.color = colors
 
 class Pipe:
     def __init__(self, x, text=None):
@@ -345,7 +368,7 @@ def draw_game_over(surf, best, score, bonus_score):
 def draw_win_screen(surf, sc, bonus):
     font_big = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("Arial", 48) or pygame.font.SysFont(None, 48)
     font_med = pygame.font.SysFont("ubuntumono", 32) or pygame.font.SysFont("Arial", 32) or pygame.font.SysFont(None, 32)
-    txt1 = font_big.render("YOU WON!", True, (0, 255, 0))
+    txt1 = font_big.render("YOU WON!", True, (0, 85, 0))
     rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 100))
     surf.blit(txt1, rect1)
     txt_sc = font_med.render(f"Points: {sc}  (bonus {bonus})", True, (0, 0, 0))
@@ -386,7 +409,7 @@ def draw_pause_overlay(surf):
 def draw_zebra_active(surf, ms_left):
     font = pygame.font.SysFont("ubuntumono", 26) or pygame.font.SysFont("Arial", 26) or pygame.font.SysFont(None, 26)
     txt = font.render(f"ZEBRA SPEED! {max(0, ms_left//1000)}s", True, (255, 0, 0))
-    rect = txt.get_rect(center=(WIDTH//2, 30))
+    rect = txt.get_rect(center=(WIDTH//2, 40))
     surf.blit(txt, rect)
 # ==============================================================
 #                          MAIN
@@ -700,6 +723,7 @@ def main():
                     cloud.draw(WIN)
                 bird.reset_position()
                 bird.randomize_shape(exclude_current=True)
+                bird.randomize_color(exclude_current=True)
                 draw_game_over(WIN, best, score, bonus_score)
             else:
                 draw_start_screen(WIN, demo_pipes, demo_land, start_bg_color)

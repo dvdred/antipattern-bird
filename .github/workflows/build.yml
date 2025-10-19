@@ -20,7 +20,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       - run: >
-          pyinstaller --onefile
+          pyinstaller --onefile --noconsole
           --add-data "icon32.png;."
           --add-data "jump.wav;."
           --add-data "lifedown.wav;."
