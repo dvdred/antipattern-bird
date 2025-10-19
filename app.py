@@ -74,6 +74,7 @@ LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
 WIN_TIME = 240_000   # 4 minuti
+GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
 
@@ -108,6 +109,56 @@ class Particle:
         if self.life > 0:
             pygame.draw.circle(surf, (255, 255, 255),
                                (int(self.x), int(self.y)), 3)
+
+class Cloud:
+    # palette possibili (sceglierne una a caso per ogni nuvola)
+    PALETTES = [
+        [(255, 255, 255)],                           # bianco puro
+        [(255, 250, 250), (255, 228, 225)],          # rosa-avorio
+        [(255, 255, 240), (250, 250, 220)],          # giallo spento
+        [(240, 248, 255), (176, 196, 222)],          # azzurro-crema
+        [(211, 211, 211), (169, 169, 169)]           # grigi
+    ]
+
+    def __init__(self, x, y, size, speed, opacity):
+        self.x, self.y, self.speed = x, y, speed
+        self.size       = random.randint(35, 90)            # raggio di riferimento
+        self.opacity    = random.randint(70, 160)           # più tenue
+        self.palette    = random.choice(self.PALETTES)
+
+        # 4-8 "bolle" casuali
+        bubbles = random.randint(4, 8)
+        self.bubbles = []
+        for _ in range(bubbles):
+            offx = random.randint(-self.size // 2, self.size)
+            offy = random.randint(-self.size // 3, self.size // 3)
+            r    = random.randint(self.size // 4, self.size // 2)
+            col  = random.choice(self.palette) + (self.opacity,)
+            self.bubbles.append((offx, offy, r, col))
+
+        # bounding-box superficie
+        max_right  = max(offx + r for offx, _, r, _ in self.bubbles) + 5
+        max_bottom = max(offy + r for _, offy, r, _ in self.bubbles) + 5
+        self.surf_w, self.surf_h = max_right, max_bottom
+        self.surface = pygame.Surface((self.surf_w, self.surf_h), pygame.SRCALPHA)
+        self._render_shape()
+
+    def _render_shape(self):
+        for offx, offy, r, col in self.bubbles:
+            cx = self.size // 2 + offx
+            cy = self.size // 2 + offy
+            pygame.draw.circle(self.surface, col, (cx, cy), r)
+
+    def update(self):
+        self.x -= self.speed
+        if self.x < -self.surf_w:
+            # rigenera anche aspetto quando rientra
+            self.x = WIDTH + random.randint(50, 250)
+            self.y = random.randint(30, HEIGHT - 250)
+            self.__init__(self.x, self.y, self.size, self.speed, self.opacity)
+
+    def draw(self, surf):
+        surf.blit(self.surface, (int(self.x), int(self.y)))
 
 class Bird:
     def __init__(self):
@@ -347,6 +398,7 @@ def main():
     running, playing = True, False
     waiting_restart  = False
     invuln_time, last_pipe = 0, pygame.time.get_ticks()
+    game_over_start = 0   # timestamp game-over
 
     paused      = False
     flash_until = 0
@@ -380,6 +432,34 @@ def main():
     won_waiting    = False
     bonus_win      = 0
 
+ # ====== AGGIUNGI QUESTO BLOCO DOPO L'INIZIALIZZAZIONE DELLE VARIABILI ======
+    # Inizializzazione nuvole
+    clouds_layer1 = []  # Strato più lontano (più lento)
+    clouds_layer2 = []  # Strato più vicino (più veloce)
+    
+    # Crea nuvole per il primo strato (più lontane)
+    for _ in range(3):
+        cloud = Cloud(
+            x=random.randint(0, WIDTH),
+            y=random.randint(50, HEIGHT - 250),
+            size=random.randint(40, 70),
+            speed=random.uniform(0.3, 0.8),
+            opacity=random.randint(80, 120)
+        )
+        clouds_layer1.append(cloud)
+    
+    # Crea nuvole per il secondo strato (più vicine)
+    for _ in range(4):
+        cloud = Cloud(
+            x=random.randint(0, WIDTH),
+            y=random.randint(50, HEIGHT - 200),
+            size=random.randint(60, 100),
+            speed=random.uniform(1.0, 1.8),
+            opacity=random.randint(150, 200)
+        )
+        clouds_layer2.append(cloud)
+    # ===========================================================================
+
 # -------------------- GAME LOOP --------------------
     while running:
         dt = clock.tick(60)
@@ -412,6 +492,8 @@ def main():
                             running = False
                     else:  # game over normale
                         if event.key == pygame.K_SPACE:
+                            if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
+                                continue   # ignora space finché non sono passati 2 s
                             waiting_restart = False
                             bird.reset_position(); pipes.clear(); score = 0; lives = 3
                             invuln_time = 0; last_pipe = now; tn = 1
@@ -465,6 +547,10 @@ def main():
 
 # --------- LOGICA GIOCO ----------
         if playing and not paused:
+            for cloud in clouds_layer1:
+                cloud.update()
+            for cloud in clouds_layer2:
+                cloud.update()
             if invuln_time > 0:
                 invuln_time = max(0, invuln_time - dt)
                 bird.set_transparent(128 if (invuln_time // 100) % 2 else 180)
@@ -518,7 +604,18 @@ def main():
                         if S_LIFEDOWN:
                             S_LIFEDOWN.play()
                         if lives <= 0:
-                            playing = False; waiting_restart = True
+                            playing = False
+                            waiting_restart = True
+                            game_over_start = now
+                            # bonus livello
+                            lvl_bonus = 0
+                            if speed_lvl >= 2.0:     # livello 2
+                                lvl_bonus = 15
+                            if speed_lvl >= 3.0:     # livello 3
+                                lvl_bonus = 30
+                            score += lvl_bonus
+                            if score > best:
+                                best = score
                         break
 
             if invuln_time == 0:
@@ -576,6 +673,11 @@ def main():
                 draw_win_screen(WIN, score, bonus_win)
             elif waiting_restart:
                 WIN.fill(bg_color)
+                # Disegna nuvole anche nella schermata game over
+                for cloud in clouds_layer1:
+                    cloud.draw(WIN)
+                for cloud in clouds_layer2:
+                    cloud.draw(WIN)
                 bird.reset_position()
                 bird.randomize_shape(exclude_current=True)
                 draw_game_over(WIN, best, score)
@@ -583,6 +685,15 @@ def main():
                 draw_start_screen(WIN, demo_pipes, demo_land, start_bg_color)
         else:
             WIN.fill(bg_color)
+            
+            # Disegna prima lo strato lontano (più lento)
+            for cloud in clouds_layer1:
+                cloud.draw(WIN)
+            
+            # Poi disegna lo strato vicino (più veloce)
+            for cloud in clouds_layer2:
+                cloud.draw(WIN)
+                
             for p in pipes:
                 p.draw(WIN)
             bird.draw(WIN)
