@@ -1,49 +1,51 @@
-name: Build executables
+name: Build and Release
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    tags:
+      - 'v*'          # si attiva solo su tag tipo v1.0.0
+  workflow_dispatch:  # oppure manuale
 
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
+        with: { python-version: '3.11' }
       - run: pip install -r requirements.txt
+      - run: >
+          pyinstaller --onefile
+          --add-data "icon32.png;."
+          --add-data "jump.wav;."
+          --add-data "lifedown.wav;."
+          --add-data "lifeup.wav;."
+          --add-data "point.wav;."
+          --add-data "rainbow.wav;."
+          --name antipattern-bird app.py
 
-      - run: |
-          pyinstaller --onefile `
-            --add-data "icon32.png;." `
-            --add-data "jump.wav;." `
-            --add-data "lifedown.wav;." `
-            --add-data "lifeup.wav;." `
-            --add-data "point.wav;." `
-            --add-data "rainbow.wav;." `
-            --name antipattern-bird app.py
-
+      # 1) salviamo l’exe come artifact temporaneo
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-win-x64
           path: dist/antipattern-bird.exe
 
+      # 2) lo carichiamo sul release
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/antipattern-bird.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   build-linux:
-    runs-on: ubuntu-latest          # 64 bit di default
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
+        with: { python-version: '3.11' }
       - run: pip install -r requirements.txt
-
       - run: >
           pyinstaller --onefile
           --add-data "icon32.png:."
@@ -58,3 +60,5 @@ jobs:
         with:
           name: antipattern-bird-linux-x64
           path: dist/antipattern-bird
+
+      - uses: softprops/action-gh-re
