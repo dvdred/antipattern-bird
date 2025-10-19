@@ -42,7 +42,7 @@ S_LIFEDOWN = pygame.mixer.Sound(lifedown_sound)
 
 for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN):
     if snd:
-        snd.set_volume(0.9)
+        snd.set_volume(0.5)
 
 LIGHT_COLORS = [(173, 216, 230), (175, 238, 238), (255, 218, 185),
                 (230, 230, 250), (240, 248, 255)]
@@ -402,7 +402,7 @@ def draw_game_over(surf, best, score, bonus_score):
     txt_best = font_big.render(f"Best: {best}", True, (0, 0, 0))
     rect_best = txt_best.get_rect(center=(WIDTH//2, HEIGHT//2 + 30))
     surf.blit(txt_best, rect_best)
-    txt3 = font_small.render("Press SPACE to restart or Q to quit", True, (0, 0, 0))
+    txt3 = font_small.render("SPACE=restart  O=change bird  Q=quit", True, (0, 0, 0))
     rect3 = txt3.get_rect(center=(WIDTH//2, HEIGHT//2 + 70))
     surf.blit(txt3, rect3)
 
@@ -785,6 +785,21 @@ def main():
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear(); playing = True
+                        elif event.key == pygame.K_o:  # <-- NUOVO: torna al menu selezione
+                            if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
+                                continue   # ignora O finché non sono passati 2 s
+                            waiting_restart = False
+                            selecting_shape = True
+                            current_shape_selection = confirmed_shape  # Mantiene l'ultima scelta
+                            current_color_selection = confirmed_color  # Mantiene l'ultima scelta
+                            bird.reset_position()
+                            pipes.clear()
+                            particles.clear()
+                            score = 0
+                            lives = 3
+                            bonus_score = 0
+                            won = False
+                            won_waiting = False    
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                             running = False
                 else:  # non in attesa: gioco fermo o in corso
