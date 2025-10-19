@@ -65,10 +65,13 @@ Before each game, you'll see a **customization menu** where you can choose:
 - `W` - Coral (orange-red)
 - `E` - Royal Blue
 - `R` - Forest Green
-- `T` - Random (changes every game over)
+- `Y` - Goldenrod
+- `U` - Medium Purple
+- `I` - Blood Red
+- `T` - Random (changes every Game Over)
 
 **DEBUG mode** (keyboard letters or mouse click)
-- `D` - Debug Overly (info about game realtime)
+- `D` - Debug Overly (info realtime)
 
 Press `SPACE` to confirm and start the game with your chosen appearance!
 
@@ -161,15 +164,15 @@ When you reach the **4-minute mark**:
 4. **Don't panic after hits** - You have 2 seconds of invulnerability to reposition
 5. **Mix it up** - Try different bird shapes - they have slightly different visual hitboxes!
 
-## Sound Effects
+## Sound Effects (from https://freesound.org )
 
-- 🐦 Flap/Jump
-- ⭐ Point scored  
-- 🌈 Rainbow/Zebra collected
-- ❤️ Life gained
-- 💔 Life lost
+- 🐦 Flap/Jump ( https://freesound.org/people/cabled_mess/sounds/350898/ )
+- ⭐ Point scored ( https://freesound.org/people/LittleRobotSoundFactory/sounds/270302/ )  
+- 🌈 Rainbow/Zebra collected ( https://freesound.org/people/1bob/sounds/717770/ )
+- ❤️ Life gained ( https://freesound.org/people/LilMati/sounds/523650/ )
+- 💔 Life lost ( https://freesound.org/people/GameAudio/sounds/220174/ )
 
-> Sounds play at 90% volume by default. Make sure your system volume is comfortable!
+> Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
 
