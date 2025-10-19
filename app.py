@@ -98,7 +98,8 @@ ZEBRA_POINTS_MULT = 2
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-WIN_TIME = 240_000   # 4 minuti
+#WIN_TIME = 240_000   # 4 minuti
+WIN_TIME = 30_000   # DEBU
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
@@ -437,6 +438,125 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     pygame.draw.rect(surf, (70, 130, 180), btn, border_radius=10)
     surf.blit(inst, inst.get_rect(center=btn.center))
 
+def draw_shape_selection_menu(surf, bg_color, current_shape, current_color):
+    surf.fill(bg_color)
+    
+    font_title = pygame.font.SysFont("ubuntumono", 40, bold=True) or pygame.font.SysFont(None, 40)
+    font_label = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont(None, 24)
+    font_small = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont(None, 18)
+    font_number = pygame.font.SysFont("ubuntumono", 20, bold=True) or pygame.font.SysFont(None, 20)
+    
+    title = font_title.render("Choose your bird", True, (0, 0, 0))
+    surf.blit(title, title.get_rect(center=(WIDTH//2, 50)))
+    
+    # Sezione FORMA
+    subtitle1 = font_label.render("SHAPE:", True, (0, 0, 0))
+    surf.blit(subtitle1, (50, 100))
+    
+    shapes = [
+        ('square', 'Square', 140, '1'),
+        ('circle', 'Circle', 190, '2'),
+        ('triangle', 'Triangle', 240, '3'),
+        ('diamond', 'Diamond', 290, '4'),
+        ('random', 'Random', 340, '5')
+    ]
+    
+    shape_buttons = []
+    for shape_id, label, y_pos, key_num in shapes:
+        btn = pygame.Rect(110, y_pos, 180, 40)
+        color = (70, 130, 180) if current_shape != shape_id else (50, 200, 50)
+        pygame.draw.rect(surf, color, btn, border_radius=8)
+        
+        # Numero della scelta
+        num_txt = font_number.render(key_num, True, (0, 0, 0))
+        surf.blit(num_txt, (btn.left - 25, btn.centery - 10))
+        
+        txt = font_label.render(label, True, (255, 255, 255))
+        surf.blit(txt, txt.get_rect(center=btn.center))
+        
+        # Freccetta indicatore
+        if current_shape == shape_id:
+            font_arrow = pygame.font.Font(font_emoji, 24) or font_label
+            arrow = font_arrow.render("→", True, (255, 0, 0))
+            surf.blit(arrow, (btn.left - 50, btn.centery - 12))
+        
+        # Preview forma
+        if shape_id != 'random':
+            preview_size = 25
+            preview_x = btn.right + 15
+            preview_y = btn.centery - preview_size // 2
+            preview_surf = pygame.Surface((preview_size, preview_size), pygame.SRCALPHA)
+            col = (255, 204, 51)
+            
+            if shape_id == 'square':
+                preview_surf.fill(col)
+            elif shape_id == 'circle':
+                pygame.draw.circle(preview_surf, col, (preview_size//2, preview_size//2), preview_size//2)
+            elif shape_id == 'triangle':
+                pts = [(preview_size//2, 0), (0, preview_size), (preview_size, preview_size)]
+                pygame.draw.polygon(preview_surf, col, pts)
+            elif shape_id == 'diamond':
+                pts = [(preview_size//2, 0), (preview_size, preview_size//2),
+                       (preview_size//2, preview_size), (0, preview_size//2)]
+                pygame.draw.polygon(preview_surf, col, pts)
+            
+            surf.blit(preview_surf, (preview_x, preview_y))
+        else:
+            question = font_label.render("?", True, (255, 204, 51))
+            surf.blit(question, (btn.right + 20, btn.centery - 12))
+        
+        shape_buttons.append((btn, shape_id))
+    
+    # Sezione COLORE
+    subtitle2 = font_label.render("COLOR:", True, (0, 0, 0))
+    surf.blit(subtitle2, (50, 400))
+    
+    colors = [
+        ('saffron', 'Saffron', 440, BIRD_COLORS[0], 'Q'),
+        ('coral', 'Coral', 490, BIRD_COLORS[1], 'W'),
+        ('blue', 'Blue', 540, BIRD_COLORS[2], 'E'),
+        ('green', 'Green', 590, BIRD_COLORS[3], 'R'),
+        ('random', 'Random', 640, None, 'T')
+    ]
+    
+    color_buttons = []
+    for color_id, label, y_pos, rgb, key_letter in colors:
+        btn = pygame.Rect(110, y_pos, 180, 40)
+        btn_color = (70, 130, 180) if current_color != color_id else (50, 200, 50)
+        pygame.draw.rect(surf, btn_color, btn, border_radius=8)
+        
+        # Lettera della scelta
+        letter_txt = font_number.render(key_letter, True, (0, 0, 0))
+        surf.blit(letter_txt, (btn.left - 25, btn.centery - 10))
+        
+        txt = font_label.render(label, True, (255, 255, 255))
+        surf.blit(txt, txt.get_rect(center=btn.center))
+        
+        # Freccetta indicatore
+        if current_color == color_id:
+            font_arrow = pygame.font.Font(font_emoji, 24) or font_label
+            arrow = font_arrow.render("→", True, (255, 0, 0))
+            surf.blit(arrow, (btn.left - 50, btn.centery - 12))
+        
+        # Preview colore
+        if rgb:
+            preview_rect = pygame.Rect(btn.right + 15, btn.centery - 12, 25, 25)
+            pygame.draw.rect(surf, rgb, preview_rect)
+            pygame.draw.rect(surf, (0, 0, 0), preview_rect, 2)
+        else:
+            question = font_label.render("?", True, (255, 204, 51))
+            surf.blit(question, (btn.right + 20, btn.centery - 12))
+        
+        color_buttons.append((btn, color_id))
+    
+    # Istruzioni
+    hint1 = font_small.render("Use numbers/letters or click to select", True, (100, 100, 100))
+    surf.blit(hint1, hint1.get_rect(center=(WIDTH//2, HEIGHT - 40)))
+    hint2 = font_small.render("Press SPACE to start", True, (100, 100, 100))
+    surf.blit(hint2, hint2.get_rect(center=(WIDTH//2, HEIGHT - 20)))
+    
+    return shape_buttons, color_buttons
+
 def draw_pause_overlay(surf):
     font = pygame.font.SysFont("ubuntumono", 56) or pygame.font.SysFont("Arial", 56) or pygame.font.SysFont(None, 56)
     txt  = font.render("PAUSE", True, (40, 40, 40))
@@ -488,6 +608,23 @@ def main():
     pipes, score, best, lives = [], 0, 0, 3
     running, playing = True, False
     waiting_restart  = False
+    selecting_shape = False
+    
+    # Selezioni correnti nel menu (quelle evidenziate)
+    current_shape_selection = 'random'
+    current_color_selection = 'random'
+    # Selezioni confermate (quelle effettivamente usate in partita)
+    confirmed_shape = 'random'
+    confirmed_color = 'random'
+    # Selezioni correnti nel menu (quelle evidenziate)
+    current_shape_selection = 'random'
+    current_color_selection = 'random'
+    # Selezioni confermate (quelle effettivamente usate in partita)
+    confirmed_shape = 'random'
+    confirmed_color = 'random'
+    # Liste dei bottoni (persistenti tra i frame)
+    shape_buttons = []
+    color_buttons = []
     invuln_time, last_pipe = 0, pygame.time.get_ticks()
     game_over_start = 0   # timestamp game-over
 
@@ -567,24 +704,50 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.MOUSEBUTTONDOWN and selecting_shape:
+                mouse_pos = event.pos
+                screen = pygame.display.get_surface()
+                sw, sh = screen.get_size()
+                scale = min(sw / WIDTH, sh / HEIGHT)
+                new_w, new_h = int(WIDTH * scale), int(HEIGHT * scale)
+                ox, oy = (sw - new_w) // 2, (sh - new_h) // 2
+                
+                log_x = (mouse_pos[0] - ox) / scale
+                log_y = (mouse_pos[1] - oy) / scale
+                
+                # Controlla click su forme
+                for btn, shape_id in shape_buttons:
+                    if btn.collidepoint(log_x, log_y):
+                        current_shape_selection = shape_id
+                        break
+                
+                # Controlla click su colori
+                for btn, color_id in color_buttons:
+                    if btn.collidepoint(log_x, log_y):
+                        current_color_selection = color_id
+                        break
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p and playing and not waiting_restart:
                     paused = not paused
                     break
+                
                 if waiting_restart:
                     # distinguiamo vittoria da game over
                     if won_waiting: # Vittoria
                         if event.key == pygame.K_SPACE:
+                            # Torna al menu di selezione dopo vittoria
                             won_waiting = False
-                            playing = True
+                            waiting_restart = False
+                            playing = False
+                            selecting_shape = True
+                            current_shape_selection = 'random'
+                            current_color_selection = 'random'
                             bird.reset_position()
-                            zebra_next_min = now + 60_000
-                            base_speed = min(6, base_speed + 0.5)
                             pipes.clear()
-                            level_timer = 0
+                            particles.clear()
                             won = False
-                            speed_lvl = 1.0
-                            score_lvl = 1
+                            # Aumenta difficoltà base per la prossima partita
+                            base_speed = min(6, base_speed + 0.5)
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                             running = False
                     else:  # game over normale
@@ -592,7 +755,26 @@ def main():
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora space finché non sono passati 2 s
                             waiting_restart = False
-                            bird.reset_position(); pipes.clear(); score = 0; lives = 3; bonus_score=0
+                            bird.reset_position()
+                            
+                            # Riapplica forma e colore confermati
+                            if confirmed_shape != 'random':
+                                bird.shape = confirmed_shape
+                            else:
+                                bird.randomize_shape(exclude_current=False)
+                            
+                            if confirmed_color == 'random':
+                                bird.randomize_color(exclude_current=False)
+                            elif confirmed_color == 'saffron':
+                                bird.color = BIRD_COLORS[0]
+                            elif confirmed_color == 'coral':
+                                bird.color = BIRD_COLORS[1]
+                            elif confirmed_color == 'blue':
+                                bird.color = BIRD_COLORS[2]
+                            elif confirmed_color == 'green':
+                                bird.color = BIRD_COLORS[3]
+                            
+                            pipes.clear(); score = 0; lives = 3; bonus_score=0
                             invuln_time = 0; last_pipe = now; tn = 1
                             next_life_threshold = 5 * tn * (tn + 1) // 2
                             bg_color   = random.choice(LIGHT_COLORS)
@@ -606,19 +788,71 @@ def main():
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                             running = False
                 else:  # non in attesa: gioco fermo o in corso
-                    if not playing and event.key == pygame.K_SPACE:
-                        playing = True
-                        bird.reset_position(); pipes.clear(); score = 0; lives = 3
-                        invuln_time = 0; last_pipe = now; tn = 1
-                        next_life_threshold = 5 * tn * (tn + 1) // 2
-                        bg_color   = random.choice(LIGHT_COLORS)
-                        land_color = random.choice(LAND_COLORS)
-                        rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
-                        zebra_next_min = now + 60_000
-                        zebra_until = 0; zebra_pending = False
-                        level_timer = 0; speed_lvl = 1.0; score_lvl = 1
-                        won = False; won_waiting = False
-                        particles.clear()
+                    if not playing and not selecting_shape and event.key == pygame.K_SPACE:
+                        selecting_shape = True  # <-- Vai al menu selezione invece di iniziare subito
+                    elif selecting_shape:
+                        # Navigazione forme (tasti 1-5)
+                        if event.key == pygame.K_1:
+                            current_shape_selection = 'square'
+                        elif event.key == pygame.K_2:
+                            current_shape_selection = 'circle'
+                        elif event.key == pygame.K_3:
+                            current_shape_selection = 'triangle'
+                        elif event.key == pygame.K_4:
+                            current_shape_selection = 'diamond'
+                        elif event.key == pygame.K_5:
+                            current_shape_selection = 'random'
+                        
+                        # Navigazione colori (tasti Q, W, E, R, T)
+                        elif event.key == pygame.K_q:
+                            current_color_selection = 'saffron'
+                        elif event.key == pygame.K_w:
+                            current_color_selection = 'coral'
+                        elif event.key == pygame.K_e:
+                            current_color_selection = 'blue'
+                        elif event.key == pygame.K_r:
+                            current_color_selection = 'green'
+                        elif event.key == pygame.K_t:
+                            current_color_selection = 'random'
+                        
+                        # Conferma con SPACE
+                        elif event.key == pygame.K_SPACE:
+                            # Salva le selezioni confermate
+                            confirmed_shape = current_shape_selection
+                            confirmed_color = current_color_selection
+                            selecting_shape = False
+                            
+                            # Applica forma
+                            if confirmed_shape != 'random':
+                                bird.shape = confirmed_shape
+                            else:
+                                bird.randomize_shape(exclude_current=False)
+                            
+                            # Applica colore
+                            if confirmed_color == 'random':
+                                bird.randomize_color(exclude_current=False)
+                            elif confirmed_color == 'saffron':
+                                bird.color = BIRD_COLORS[0]
+                            elif confirmed_color == 'coral':
+                                bird.color = BIRD_COLORS[1]
+                            elif confirmed_color == 'blue':
+                                bird.color = BIRD_COLORS[2]
+                            elif confirmed_color == 'green':
+                                bird.color = BIRD_COLORS[3]
+                            
+                            # Inizia partita
+                            playing = True
+                            bird.reset_position(); pipes.clear(); score = 0; lives = 3
+                            invuln_time = 0; last_pipe = now; tn = 1
+                            next_life_threshold = 5 * tn * (tn + 1) // 2
+                            bg_color   = random.choice(LIGHT_COLORS)
+                            land_color = random.choice(LAND_COLORS)
+                            rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                            zebra_next_min = now + 60_000
+                            zebra_until = 0; zebra_pending = False
+                            level_timer = 0; speed_lvl = 1.0; score_lvl = 1
+                            won = False; won_waiting = False
+                            particles.clear()
                     elif playing and event.key == pygame.K_SPACE and not paused:
                         bird.jump()
                         for _ in range(5):
@@ -675,6 +909,7 @@ def main():
                 if score > best:
                     best = score
                 won_waiting = True
+                waiting_restart = True
                 playing = False
             elif level_timer >= LVL3_TIME and speed_lvl < 2.0:    # 150s -> lvl3
                 speed_lvl = 2.0; score_lvl = 3
@@ -798,6 +1033,12 @@ def main():
                 bird.randomize_shape(exclude_current=True)
                 bird.randomize_color(exclude_current=True)
                 draw_game_over(WIN, best, score, bonus_score)
+            elif selecting_shape:  # <-- AGGIUNTO
+                new_shape_btns, new_color_btns = draw_shape_selection_menu(
+                    WIN, bg_color, current_shape_selection, current_color_selection
+                )
+                shape_buttons = new_shape_btns
+                color_buttons = new_color_btns
             else:
                 draw_start_screen(WIN, demo_pipes, demo_land, start_bg_color)
                 for cloud in clouds_layer1:
