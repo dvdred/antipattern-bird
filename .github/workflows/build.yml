@@ -17,20 +17,20 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: >
-          pyinstaller --onefile ^
-            --add-data "icon32.png;." ^
-            --add-data "jump.wav;." ^
-            --add-data "lifedown.wav;." ^
-            --add-data "lifeup.wav;." ^
-            --add-data "point.wav;." ^
-            --add-data "rainbow.wav;." ^
+      - run: |
+          pyinstaller --onefile `
+            --add-data "icon32.png;." `
+            --add-data "jump.wav;." `
+            --add-data "lifedown.wav;." `
+            --add-data "lifeup.wav;." `
+            --add-data "point.wav;." `
+            --add-data "rainbow.wav;." `
             --name antipattern-bird app.py
 
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-win-x64
-          path: dist/antipattern-bird.exe
+          path: bin/antipattern-bird.exe
 
 
   build-linux:
@@ -57,4 +57,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-linux-x64
-          path: dist/antipattern-bird
+          path: bin/antipattern-bird
