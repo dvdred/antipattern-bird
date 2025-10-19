@@ -879,7 +879,7 @@ def main():
                                 bird.color = BIRD_COLORS[6]                                
 
                             pipes.clear(); score = 0; lives = 3; bonus_score=0
-                            base_speed = 3  # <-- RESET velocità base dopo game over
+                            base_speed = 2.5  # <-- RESET velocità base dopo game over
                             invuln_time = 0; last_pipe = now; tn = 1
                             next_life_threshold = 5 * tn * (tn + 1) // 2
                             bg_color   = random.choice(LIGHT_COLORS)
@@ -905,7 +905,7 @@ def main():
                             score = 0
                             lives = 3
                             bonus_score = 0
-                            base_speed = 3
+                            base_speed = 2.5
                             won = False
                             won_waiting = False    
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
@@ -1007,20 +1007,28 @@ def main():
 # ------------- fine input -------------
 
 # --------- UPDATE DEMO ----------
-        if not playing and not waiting_restart:
+        if not playing:
             for cloud in clouds_layer1:
                 cloud.update()
             for cloud in clouds_layer2:
                 cloud.update()
-            # Calcola frequenza spawn per demo (velocità fissa = 2)
-            demo_pipe_freq = get_pipe_spawn_time(2, MIN_PIPE_DISTANCE * 1.5)
-            if now - demo_last_pipe > demo_pipe_freq:
+            # Calcola frequenza spawn per demo (velocità fissa = 1.5)
+            demo_pipe_freq = get_pipe_spawn_time(1.0, MIN_PIPE_DISTANCE * 0.35)
+            
+            # Controlla se è il momento di generare una nuova pipe E se l'ultima è abbastanza lontana
+            can_spawn = now - demo_last_pipe > demo_pipe_freq
+            if demo_pipes:
+                last_pipe_x = demo_pipes[-1].x
+                can_spawn = can_spawn and (WIDTH - last_pipe_x >= MIN_PIPE_DISTANCE * 0.35)
+            
+            if can_spawn:
                 if now >= rainbow_next:
                     demo_pipes.append(RainbowPipe(WIDTH, gap=180))
                     rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                 else:
-                    demo_pipes.append(Pipe(WIDTH, gap=180))
+                    demo_pipes.append(Pipe(WIDTH, gap=150))
                 demo_last_pipe = now
+            
             for p in demo_pipes[:]:
                 p.update(speed=2)
                 if p.x + PIPE_W < 0:
@@ -1171,6 +1179,11 @@ def main():
 # -------------------- DRAW --------------------
         if not playing:
             if won_waiting:
+                WIN.fill(bg_color)
+                for cloud in clouds_layer1:
+                    cloud.draw(WIN)
+                for cloud in clouds_layer2:
+                    cloud.draw(WIN)
                 draw_win_screen(WIN, score, bonus_win)
             elif waiting_restart:
                 WIN.fill(bg_color)
@@ -1184,6 +1197,11 @@ def main():
                 bird.randomize_color(exclude_current=True)
                 draw_game_over(WIN, best, score, bonus_score)
             elif selecting_shape:
+                WIN.fill(bg_color)
+                for cloud in clouds_layer1:
+                    cloud.draw(WIN)
+                for cloud in clouds_layer2:
+                    cloud.draw(WIN)
                 new_shape_btns, new_color_btns, debug_btn = draw_shape_selection_menu(
                     WIN, bg_color, current_shape_selection, current_color_selection, debug_mode
                 )

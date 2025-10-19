@@ -70,12 +70,20 @@ Before each game, you'll see a **customization menu** where you can choose:
 - `I` - Blood Red
 - `T` - Random (changes every Game Over)
 
-**DEBUG mode** (keyboard letters or mouse click)
-- `D` - Debug Overly (info realtime)
+**DEBUG Mode** (keyboard letter `D` or mouse click)
+- Toggles real-time overlay showing:
+  - **Game Time** - elapsed time in mm:ss format
+  - **Base Speed** - starting scroll speed
+  - **Level Mult** - current level multiplier (1.0×, 1.5×, 2.0×)
+  - **Zebra Mult** - speed boost when active (1.5×)
+  - **SPEED** - final combined speed (highlighted in green)
+  - **Pipe Gap** - current vertical spacing between pipes
+
+> Useful for understanding the difficulty curve and optimizing your strategy!
 
 Press `SPACE` to confirm and start the game with your chosen appearance!
 
-> **Note**: Your selection is remembered during the current session. After winning, you'll return to this menu to customize again with increased difficulty.
+> **Note**: Your selection is remembered during the current session. After a Game Over, press `O` to return to this menu and change your bird. After winning, you'll automatically return here with increased difficulty.
 
 ### In-Game Controls
 
@@ -83,6 +91,7 @@ Press `SPACE` to confirm and start the game with your chosen appearance!
 |-----|--------|
 | `SPACE` (tap or hold) | Jump / Flap |
 | `P` | Pause / Resume |
+| `O` (after Game Over) | Return to customization menu |
 | `Q` or `ESC` | Quit to desktop |
 
 The game window is **resizable** - drag the corners to adjust the size while maintaining the correct aspect ratio.
@@ -133,12 +142,25 @@ When you collect a life, you'll hear a happy "power-up" sound! 🎵
 
 The game automatically increases difficulty based on time survived:
 
-| Time | Level | Effect |
-|------|-------|--------|
-| 0-90s | Level 1 | Base scroll speed |
-| 90-150s | Level 2 | 1.5× speed, 1.5× points |
-| 150-240s | Level 3 | 2× speed, 2× points |
-| **240s** | **VICTORY!** | Win screen + bonus points |
+| Time | Level | Speed | Points | Pipe Gap |
+|------|-------|-------|--------|----------|
+| 0-90s | Level 1 | 1.0× | 1.0× | 180px (easy) |
+| 90-150s | Level 2 | 1.5× | 1.5× | 165px (medium) |
+| 150-240s | Level 3 | 2.0× | 2.0× | 150px (hard) |
+| **240s** | **VICTORY!** | — | — | **Win screen + bonus** |
+
+> **Note**: As you progress, not only does speed increase, but the vertical gap between pipes **gets narrower**, making navigation more challenging!
+
+### Game Over & Continue
+
+When you lose all lives:
+- **Best Score** is displayed (highest score in current session)
+- **Bonus points** are added based on level reached
+- Press `SPACE` to **restart** with the same bird customization
+- Press `O` to **return to customization menu** and change your bird
+- Press `Q` to quit
+
+> **Tip**: After a tough run, press `O` to try a different shape or color!
 
 ### Victory & Progressive Difficulty
 
