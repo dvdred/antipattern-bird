@@ -28,7 +28,7 @@ point_sound    = get_resource_path('point.wav')
 rainbow_sound  = get_resource_path('rainbow.wav')
 lifeup_sound   = get_resource_path('lifeup.wav')
 lifedown_sound = get_resource_path('lifedown.wav')
-font_emoji     = get_resource_path('DejaVuSansMono')
+font_emoji     = get_resource_path('DejaVuSansMono.ttf')
 
 ICON = pygame.image.load(icon_path)
 pygame.display.set_icon(ICON)
@@ -265,7 +265,7 @@ def draw_score(surf, score):
               (WIDTH-150, 10))
 
 def draw_lives(surf, lives):
-    surf.blit((pygame.font.SysFont("dejavusansmono", 28) or pygame.freetype.Font(font_emoji, size=28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
+    surf.blit((pygame.font.Font(font_emoji, size=28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
               (10, 10))
 
 def draw_level(surf, lvl):
