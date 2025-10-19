@@ -27,6 +27,7 @@ jobs:
           --add-data "lifeup.wav;."
           --add-data "point.wav;."
           --add-data "rainbow.wav;."
+          --add-data "DejaVuSansMono.ttf;."
           --name antipattern-bird app.py
 
       - uses: actions/upload-artifact@v4
@@ -61,6 +62,7 @@ jobs:
           --add-data "lifeup.wav:."
           --add-data "point.wav:."
           --add-data "rainbow.wav:."
+          --add-data "DejaVuSansMono.ttf:."
           --name antipattern-bird app.py
 
       - uses: actions/upload-artifact@v4
