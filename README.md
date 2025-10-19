@@ -1,9 +1,9 @@
 # antipattern-bird
 Simple python Game (Flappy Bird Like)
 
-![Intro](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo0.png)
-![Options](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo1.png)
-![Game](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo2.png)
+![Intro](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo00.png)
+![Options](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo01.png)
+![Game](https://github.com/dvdred/antipattern-bird/raw/refs/heads/main/demo02.png)
 
 An addictive, Python-powered Flappy-style mini-game with rainbow & zebra power-ups, customizable bird, lives system and 4-min speed-run victory.
 
