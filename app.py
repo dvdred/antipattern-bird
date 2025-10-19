@@ -615,7 +615,7 @@ def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed):  # <-
     surf.blit(txt4, (15, y_offset + 60))
     
     # Velocità finale evidenziata
-    txt5 = font_debug.render(f"→ SPEED: {cur_speed:.2f}", True, (0, 255, 0))
+    txt5 = font_debug.render(f"SPEED: {cur_speed:.2f}", True, (0, 255, 0))
     surf.blit(txt5, (140, y_offset + 20))
 
 def present(surf):
@@ -646,6 +646,18 @@ def present(surf):
 #                          MAIN
 # ==============================================================
 def main():
+    # Variabili per gestire il tempo di pausa
+    pause_start = 0
+    total_paused_time = 0
+    
+    def game_time():
+        """Restituisce il tempo di gioco escludendo le pause"""
+        if paused:
+            # Durante la pausa, ritorna il tempo congelato
+            return pause_start - total_paused_time
+        else:
+            return pygame.time.get_ticks() - total_paused_time
+    
     clock = pygame.time.Clock()
     bg_color   = random.choice(LIGHT_COLORS)
     land_color = random.choice(LAND_COLORS)
@@ -746,7 +758,7 @@ def main():
         else:
             pygame.mixer.unpause()
 
-        now = pygame.time.get_ticks()
+        now = game_time() if playing else pygame.time.get_ticks()
 
 # -------- INPUT --------
         for event in pygame.event.get():
@@ -779,6 +791,10 @@ def main():
                     debug_mode = not debug_mode
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p and playing and not waiting_restart:
+                    if not paused:  # Sta per andare in pausa
+                        pause_start = pygame.time.get_ticks()
+                    else:  # Sta per uscire dalla pausa
+                        total_paused_time += pygame.time.get_ticks() - pause_start
                     paused = not paused
                     break
                 
@@ -789,6 +805,8 @@ def main():
                             # Torna al menu di selezione dopo vittoria
                             won_waiting = False
                             waiting_restart = False
+                            total_paused_time = 0
+                            pause_start = 0
                             playing = False
                             selecting_shape = True
                             current_shape_selection = 'random'
@@ -806,6 +824,8 @@ def main():
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora space finché non sono passati 2 s
                             waiting_restart = False
+                            total_paused_time = 0
+                            pause_start = 0
                             bird.reset_position()
                             
                             # Riapplica forma e colore confermati
@@ -841,6 +861,8 @@ def main():
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora O finché non sono passati 2 s
                             waiting_restart = False
+                            total_paused_time = 0
+                            pause_start = 0
                             selecting_shape = True
                             current_shape_selection = confirmed_shape  # Mantiene l'ultima scelta
                             current_color_selection = confirmed_color  # Mantiene l'ultima scelta
@@ -891,7 +913,9 @@ def main():
                             confirmed_shape = current_shape_selection
                             confirmed_color = current_color_selection
                             selecting_shape = False
-                            
+                            total_paused_time = 0
+                            pause_start = 0
+
                             # Applica forma
                             if confirmed_shape != 'random':
                                 bird.shape = confirmed_shape
