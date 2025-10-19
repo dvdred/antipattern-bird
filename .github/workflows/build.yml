@@ -3,17 +3,21 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'          # si attiva solo su tag tipo v1.0.0
-  workflow_dispatch:  # oppure manuale
+      - 'v*'          # triggers only on tags like v1.0.0
+  workflow_dispatch:  # manual run from Actions tab
 
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v4
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
+
       - run: pip install -r requirements.txt
+
       - run: >
           pyinstaller --onefile
           --add-data "icon32.png;."
@@ -24,13 +28,11 @@ jobs:
           --add-data "rainbow.wav;."
           --name antipattern-bird app.py
 
-      # 1) salviamo l’exe come artifact temporaneo
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-win-x64
           path: dist/antipattern-bird.exe
 
-      # 2) lo carichiamo sul release
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -43,9 +45,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v4
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
+
       - run: pip install -r requirements.txt
+
       - run: >
           pyinstaller --onefile
           --add-data "icon32.png:."
@@ -61,4 +67,9 @@ jobs:
           name: antipattern-bird-linux-x64
           path: dist/antipattern-bird
 
-      - uses: softprops/action-gh-re
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/antipattern-bird
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
