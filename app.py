@@ -486,7 +486,7 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
             preview_x = btn.right + 15
             preview_y = btn.centery - preview_size // 2
             preview_surf = pygame.Surface((preview_size, preview_size), pygame.SRCALPHA)
-            col = (255, 204, 51)
+            col = (0, 0, 0)
             
             if shape_id == 'square':
                 preview_surf.fill(col)
@@ -502,26 +502,32 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
             
             surf.blit(preview_surf, (preview_x, preview_y))
         else:
-            question = font_label.render("?", True, (255, 204, 51))
+            question = font_label.render("?", True, (0, 0, 0))
             surf.blit(question, (btn.right + 20, btn.centery - 12))
         
         shape_buttons.append((btn, shape_id))
     
     # Sezione COLORE
     subtitle2 = font_label.render("COLOR:", True, (0, 0, 0))
-    surf.blit(subtitle2, (50, 400))
+    surf.blit(subtitle2, (10, 400))
     
     colors = [
-        ('saffron', 'Saffron', 440, BIRD_COLORS[0], 'Q'),
-        ('coral', 'Coral', 490, BIRD_COLORS[1], 'W'),
-        ('blue', 'Blue', 540, BIRD_COLORS[2], 'E'),
-        ('green', 'Green', 590, BIRD_COLORS[3], 'R'),
-        ('random', 'Random', 640, None, 'T')
+        ('saffron', 'Saffron', 440, BIRD_COLORS[0], 'Q', 0),
+        ('coral', 'Coral', 490, BIRD_COLORS[1], 'W', 0),
+        ('blue', 'Blue', 540, BIRD_COLORS[2], 'E', 0),
+        ('green', 'Green', 590, BIRD_COLORS[3], 'R', 0),
+        ('goldenrod', 'Goldenrod', 440, BIRD_COLORS[4], 'Y', 1),
+        ('purple', 'Purple', 490, BIRD_COLORS[5], 'U', 1),
+        ('red', 'Blood Red', 540, BIRD_COLORS[6], 'I', 1),
+        ('random', 'Random', 640, None, 'T', 1)
     ]
-    
+
     color_buttons = []
-    for color_id, label, y_pos, rgb, key_letter in colors:
-        btn = pygame.Rect(110, y_pos, 180, 40)
+    for color_id, label, y_pos, rgb, key_letter, column in colors:
+        if column < 1:
+            btn = pygame.Rect(75, y_pos, 130, 40)
+        else:
+            btn = pygame.Rect(310, y_pos, 130, 40)
         btn_color = (70, 130, 180) if current_color != color_id else (50, 200, 50)
         pygame.draw.rect(surf, btn_color, btn, border_radius=8)
         
@@ -544,7 +550,7 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
             pygame.draw.rect(surf, rgb, preview_rect)
             pygame.draw.rect(surf, (0, 0, 0), preview_rect, 2)
         else:
-            question = font_label.render("?", True, (255, 204, 51))
+            question = font_label.render("?", True, (0, 0, 0))
             surf.blit(question, (btn.right + 20, btn.centery - 12))
         
         color_buttons.append((btn, color_id))
@@ -851,7 +857,13 @@ def main():
                                 bird.color = BIRD_COLORS[2]
                             elif confirmed_color == 'green':
                                 bird.color = BIRD_COLORS[3]
-                            
+                            elif confirmed_color == 'goldenrod':
+                                bird.color = BIRD_COLORS[4]
+                            elif confirmed_color == 'purple':
+                                bird.color = BIRD_COLORS[5]
+                            elif confirmed_color == 'red':
+                                bird.color = BIRD_COLORS[6]                                
+
                             pipes.clear(); score = 0; lives = 3; bonus_score=0
                             base_speed = 3  # <-- RESET velocità base dopo game over
                             invuln_time = 0; last_pipe = now; tn = 1
@@ -911,6 +923,13 @@ def main():
                             current_color_selection = 'green'
                         elif event.key == pygame.K_t:
                             current_color_selection = 'random'
+                        elif event.key == pygame.K_y:
+                            current_color_selection = 'goldenrod'
+                        elif event.key == pygame.K_u:
+                            current_color_selection = 'purple'
+                        elif event.key == pygame.K_i:
+                            current_color_selection = 'red'
+
                         # Toggle Debug Mode
                         elif event.key == pygame.K_d:
                             debug_mode = not debug_mode
@@ -940,6 +959,12 @@ def main():
                                 bird.color = BIRD_COLORS[2]
                             elif confirmed_color == 'green':
                                 bird.color = BIRD_COLORS[3]
+                            elif confirmed_color == 'goldenrod':
+                                bird.color = BIRD_COLORS[4]
+                            elif confirmed_color == 'purple':
+                                bird.color = BIRD_COLORS[5]
+                            elif confirmed_color == 'red':
+                                bird.color = BIRD_COLORS[6]                                
                             
                             # Inizia partita
                             playing = True
