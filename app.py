@@ -78,8 +78,9 @@ LAND_COLORS  = [(101,67,33), (204,204,0), (15,5,135)]
 GRAVITY   = 0.25
 JUMP      = -6
 PIPE_W    = 70
-PIPE_GAP  = 150
-PIPE_FREQ = 1500
+PIPE_GAP  = 180
+MIN_PIPE_DISTANCE = WIDTH // 1.5   # Distanza minima tra pipe (1/4 schermo)
+MAX_PIPE_DISTANCE = WIDTH * 1.5        # Distanza massima tra pipe (1 schermo)
 MAX_LIVES = 6
 INVULN_MS = 2000
 DEMO_ALPHA = 60
@@ -100,7 +101,7 @@ LVL3_TIME = 150_000
 
 WIN_TIME = 240_000   # 4 minuti
 #WIN_TIME = 30_000   # DEBUG
-GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
+GAME_OVER_WAIT_MS = 1500   # antidolorifico 1.5 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
 DEBUG_MODE = False
@@ -122,6 +123,14 @@ TEXT_LIST = [
 "Reinventing_the_wheel", "Reinventing_the_Square_Wheel", "Fencepost",
 "Software_Bloat", "Spaghetti_Code", "Hard_Code", "Soft_Code", "Dead_End"
 ]
+
+def get_pipe_spawn_time(speed, distance):
+    """Calcola millisecondi necessari affinché una pipe percorra 'distance' pixel alla velocità 'speed'"""
+    # speed = pixel/frame, 60 fps
+    # time (ms) = (distance / speed) * (1000 / 60)
+    if speed <= 0:
+        return 1500  # fallback
+    return int((distance / speed) * 1000 / 60)
 
 class Particle:
     def __init__(self, x, y, color=(255, 255, 255)):
@@ -278,7 +287,7 @@ class Bird:
         self.color = colors
 
 class Pipe:
-    def __init__(self, x, text=None):
+    def __init__(self, x, text=None, gap=180):
         self.x = x
         self.height = random.randint(150, 400)
         self.color  = random.choice(PIPE_COLORS)
@@ -286,6 +295,7 @@ class Pipe:
         self.is_rainbow = False
         self.is_zebra   = False
         self.text = random.choice(TEXT_LIST) if text is None else text
+        self.gap = gap
 
     def update(self, speed=3):
         self.x -= speed
@@ -307,10 +317,10 @@ class Pipe:
             if txt.get_width() <= PIPE_W - 4:
                 surf.blit(txt, (x_txt, y_line))
 
-        bot_h = HEIGHT - self.height - PIPE_GAP - 50
+        bot_h = HEIGHT - self.height - self.gap - 50
         bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
         bottom.fill((*self.color, alpha))
-        surf.blit(bottom, (self.x, self.height + PIPE_GAP))
+        surf.blit(bottom, (self.x, self.height + self.gap))
         start_y_bot = max(5, (bot_h - total_h) // 2)
         for i, line in enumerate(lines):
             y_line = start_y_bot + i * 24
@@ -319,18 +329,18 @@ class Pipe:
             txt = font_small.render(line, True, (255,255,255))
             x_txt = self.x + (PIPE_W - txt.get_width()) // 2
             if txt.get_width() <= PIPE_W - 4:
-                surf.blit(txt, (x_txt, self.height + PIPE_GAP + 5 + y_line))
+                surf.blit(txt, (x_txt, self.height + self.gap + 5 + y_line))
 
     def collide(self, bird):
         b  = bird.get_rect()
         t  = pygame.Rect(self.x, 0, PIPE_W, self.height)
-        bo = pygame.Rect(self.x, self.height + PIPE_GAP, PIPE_W,
-                         HEIGHT - self.height - PIPE_GAP - 50)
+        bo = pygame.Rect(self.x, self.height + self.gap, PIPE_W,
+                         HEIGHT - self.height - self.gap - 50)
         return b.colliderect(t) or b.colliderect(bo)
 
 class RainbowPipe(Pipe):
-    def __init__(self, x):
-        super().__init__(x, text="")
+    def __init__(self, x, gap=180):
+        super().__init__(x, text="", gap=gap)
         self.rainbow = RAINBOW_COLORS
         self.passed = False
         self.is_rainbow = True
@@ -342,16 +352,16 @@ class RainbowPipe(Pipe):
             band = pygame.Surface((strip_w, self.height), pygame.SRCALPHA)
             band.fill((*col, alpha))
             surf.blit(band, (x_band, 0))
-        bot_h = HEIGHT - self.height - PIPE_GAP - 50
+        bot_h = HEIGHT - self.height - self.gap - 50
         for i, col in enumerate(self.rainbow):
             x_band = self.x + i * strip_w
             band = pygame.Surface((strip_w, bot_h), pygame.SRCALPHA)
             band.fill((*col, alpha))
-            surf.blit(band, (x_band, self.height + PIPE_GAP))
+            surf.blit(band, (x_band, self.height + self.gap))
 
 class ZebraPipe(Pipe):
-    def __init__(self, x):
-        super().__init__(x, text="")
+    def __init__(self, x, gap=180):
+        super().__init__(x, text="", gap=gap)
         self.colors = ZEBRA_COLORS
         self.passed = False
         self.is_zebra = True
@@ -363,12 +373,12 @@ class ZebraPipe(Pipe):
             band = pygame.Surface((strip_w, self.height), pygame.SRCALPHA)
             band.fill((*col, alpha))
             surf.blit(band, (x_band, 0))
-        bot_h = HEIGHT - self.height - PIPE_GAP - 50
+        bot_h = HEIGHT - self.height - self.gap - 50
         for i, col in enumerate(self.colors):
             x_band = self.x + i * strip_w
             band = pygame.Surface((strip_w, bot_h), pygame.SRCALPHA)
             band.fill((*col, alpha))
-            surf.blit(band, (x_band, self.height + PIPE_GAP))
+            surf.blit(band, (x_band, self.height + self.gap))
 # ==============================================================
 #                      FUNZIONI UI
 # ==============================================================
@@ -594,14 +604,14 @@ def draw_zebra_active(surf, ms_left):
     rect = txt.get_rect(center=(WIDTH//2, 40))
     surf.blit(txt, rect)
 
-def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed, game_time_ms):
+def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed, game_time_ms, pipe_gap):
     """Mostra informazioni di debug sulla velocità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
     
-    # Background semi-trasparente (aumentato per fare spazio al tempo)
-    debug_bg = pygame.Surface((250, 110), pygame.SRCALPHA)
+    # Background semi-trasparente (aumentato per fare spazio al gap)
+    debug_bg = pygame.Surface((250, 160), pygame.SRCALPHA)
     debug_bg.fill((0, 0, 0, 180))
-    surf.blit(debug_bg, (10, HEIGHT - 170))
+    surf.blit(debug_bg, (10, HEIGHT - 190))
     
     # Informazioni
     y_offset = HEIGHT - 165
@@ -630,6 +640,10 @@ def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed, game_t
     # Velocità finale evidenziata
     txt5 = font_debug.render(f"SPEED: {cur_speed:.2f}", True, (0, 255, 0))
     surf.blit(txt5, (160, y_offset + 40))
+    
+    # Pipe Gap
+    txt6 = font_debug.render(f"Pipe Gap: {pipe_gap}", True, (255, 255, 255))
+    surf.blit(txt6, (15, y_offset + 100))
 
 def present(surf):
     # surf è la surface logica (WIN) 500x750
@@ -722,7 +736,7 @@ def main():
     zebra_until      = 0
     zebra_next_min   = pygame.time.get_ticks() + 60_000
     zebra_pending    = False
-    base_speed       = 3
+    base_speed       = 2.5
 
 # ----- LIVELLI -----
     level_timer      = 0
@@ -998,12 +1012,14 @@ def main():
                 cloud.update()
             for cloud in clouds_layer2:
                 cloud.update()
-            if now - demo_last_pipe > PIPE_FREQ:
+            # Calcola frequenza spawn per demo (velocità fissa = 2)
+            demo_pipe_freq = get_pipe_spawn_time(2, MIN_PIPE_DISTANCE * 1.5)
+            if now - demo_last_pipe > demo_pipe_freq:
                 if now >= rainbow_next:
-                    demo_pipes.append(RainbowPipe(WIDTH))
+                    demo_pipes.append(RainbowPipe(WIDTH, gap=180))
                     rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                 else:
-                    demo_pipes.append(Pipe(WIDTH))
+                    demo_pipes.append(Pipe(WIDTH, gap=180))
                 demo_last_pipe = now
             for p in demo_pipes[:]:
                 p.update(speed=2)
@@ -1050,16 +1066,24 @@ def main():
 # ---- speed istantanea (livello + zebra) ----
             cur_speed = base_speed * speed_lvl * (SPEED_MULTIPLIER if now < zebra_until else 1)
 
-            if now - last_pipe > PIPE_FREQ:
+            # Calcola distanza pipe dinamica (più veloce = più distanti)
+            target_distance = min(MAX_PIPE_DISTANCE, 
+                                  MIN_PIPE_DISTANCE + (cur_speed - base_speed) * 30)
+            dynamic_pipe_freq = get_pipe_spawn_time(cur_speed, target_distance)
+            
+            if now - last_pipe > dynamic_pipe_freq:
                 last_pipe = now
+                # Calcola gap in base al livello
+                current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
+                
                 if zebra_pending:
-                    pipes.append(ZebraPipe(WIDTH))
+                    pipes.append(ZebraPipe(WIDTH, gap=current_gap))
                     zebra_pending = False
                 elif now >= rainbow_next:
-                    pipes.append(RainbowPipe(WIDTH))
+                    pipes.append(RainbowPipe(WIDTH, gap=current_gap))
                     rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                 else:
-                    pipes.append(Pipe(WIDTH))
+                    pipes.append(Pipe(WIDTH, gap=current_gap))
 
             if invuln_time == 0:
                 collided_this_frame = False
@@ -1194,7 +1218,8 @@ def main():
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
             if debug_mode:
-                draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed, level_timer)
+                current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
+                draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed, level_timer, current_gap)
 
         if paused:
             draw_pause_overlay(WIN)
