@@ -439,7 +439,7 @@ class IcePipe(Pipe):
 
         # emoji al centro
         font_big = pygame.font.Font(font_emoji, 28) or pygame.font.SysFont(None, 28)
-        txt = font_big.render("🧊", True, (0, 0, 0))
+        txt = font_big.render("❄️", True, (0, 0, 0))
         rect = txt.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
         surf.blit(txt, rect)
         rect.centery = self.height + PIPE_GAP + bot_h // 2

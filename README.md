@@ -75,7 +75,9 @@ Before each game, you'll see a **customization menu** where you can choose:
   - **Game Time** - elapsed time in mm:ss format
   - **Base Speed** - starting scroll speed
   - **Level Mult** - current level multiplier (1.0×, 1.5×, 2.0×)
-  - **Zebra Mult** - speed boost when active (1.5×)
+  - **Zebra Mult** - speed boost when active (1.5×) for 8 second
+  - **Golden Pipe** - +1 Life
+  - **Ice Pipe** - %50 speed for 8 second  
   - **SPEED** - final combined speed (highlighted in green)
   - **Pipe Gap** - current vertical spacing between pipes
 
@@ -130,6 +132,16 @@ Score: 42      ❤ ❤ ❤      Level 1
   - All points earned are **doubled** (×2)
   - A countdown timer appears at the top
 - Appears once per minute
+
+**🧊 ICE** (white/blue pipe)  
+- Activates **ICE-SLOW mode** for 8 seconds:
+  - Everything scrolls **0.5× slower**
+  - A countdown timer appears at the top
+- Appears randomly every 60-75 seconds
+
+**🪙 GOLDEN** (gold pipe)  
+- +1 Life
+- Appears randomly every 180-210 seconds
 
 ### Extra Lives
 
@@ -195,6 +207,7 @@ When you reach the **4-minute mark**:
 - 💔 Life lost ( https://freesound.org/people/GameAudio/sounds/220174/ )
 - 🪙​ Golden Pipe ( https://freesound.org/people/Eschwabe3/sounds/460132/ )
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
+
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
