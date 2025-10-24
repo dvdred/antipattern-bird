@@ -105,7 +105,7 @@ GOLDEN_MIN_MS = 150_000          # 2,5 minuti (raro)
 GOLDEN_MAX_MS = 210_000          # 3,5 minuti
 
 # ---------- ICE PIPE ----------
-ICE_MIN_MS = 30_000          # 0,5 minuti (raro)
+ICE_MIN_MS = 30_000          # 0,5 minuti
 ICE_MAX_MS = 60_000          # 1 minuti
 
 
@@ -114,7 +114,7 @@ LVL3_TIME = 150_000
 
 WIN_TIME = 240_000   # 4 minuti
 #WIN_TIME = 30_000   # DEBUG
-GAME_OVER_WAIT_MS = 1500   # antidolorifico 1.5 s
+GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
 DEBUG_MODE = False
@@ -401,6 +401,10 @@ class GoldenPipe(Pipe):
         self.passed = False
 
     def draw(self, surf, alpha=255):
+        # ---- bordo nero 2 px ----
+        pygame.draw.rect(surf, (0,0,0), (self.x-2, -2, PIPE_W+4, self.height+4), 2)
+        pygame.draw.rect(surf, (0,0,0), (self.x-2, self.height+PIPE_GAP-2, PIPE_W+4,
+                                        HEIGHT-self.height-PIPE_GAP-50+4), 2)        
         # riempi entrambi i lati con colore dorato
         top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
         top.fill((*self.color, alpha))
@@ -427,7 +431,10 @@ class IcePipe(Pipe):
         self.is_ice = True
 
     def draw(self, surf, alpha=255):
-        # disegno identico a GoldenPipe ma colore diverso
+        # ---- bordo nero 2 px ----
+        pygame.draw.rect(surf, (0,0,0), (self.x-2, -2, PIPE_W+4, self.height+4), 2)
+        pygame.draw.rect(surf, (0,0,0), (self.x-2, self.height+PIPE_GAP-2, PIPE_W+4,
+                                        HEIGHT-self.height-PIPE_GAP-50+4), 2)
         top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
         top.fill((*self.color, alpha))
         surf.blit(top, (self.x, 0))
@@ -667,13 +674,13 @@ def draw_pause_overlay(surf):
 def draw_zebra_active(surf, ms_left):
     font = pygame.font.SysFont("ubuntumono", 26) or pygame.font.SysFont("Arial", 26) or pygame.font.SysFont(None, 26)
     txt = font.render(f"ZEBRA SPEED! {max(0, ms_left//1000)}s", True, (255, 0, 0))
-    rect = txt.get_rect(center=(WIDTH//2, 40))
+    rect = txt.get_rect(center=(WIDTH//2, 45))
     surf.blit(txt, rect)
 
 def draw_ice_active(surf, ms_left):
     font = pygame.font.Font(font_emoji, 26) or pygame.font.SysFont(None, 26)
     txt = font.render(f"❄️ ICE TIME! {max(0, ms_left//1000)}s", True, (30, 144, 255))
-    rect = txt.get_rect(center=(WIDTH//2, 40))
+    rect = txt.get_rect(center=(WIDTH//2, 70))
     surf.blit(txt, rect)
 
 def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, cur_speed, game_time_ms, pipe_gap):
@@ -1150,12 +1157,13 @@ def main():
                 zebra_next_min = now + 60_000
 
 # ---- speed istantanea (livello + zebra) ----
-            cur_speed = base_speed * speed_lvl * (SPEED_MULTIPLIER if now < zebra_until else 1)
+            ice_mult      = 0.5 if (now < ice_until) else 1.0
+            master_speed  = base_speed * speed_lvl * (SPEED_MULTIPLIER if now < zebra_until else 1.0) * ice_mult
 
             # Calcola distanza pipe dinamica (più veloce = più distanti)
-            target_distance = min(MAX_PIPE_DISTANCE, 
-                                  MIN_PIPE_DISTANCE + (cur_speed - base_speed) * 30)
-            dynamic_pipe_freq = get_pipe_spawn_time(cur_speed, target_distance)
+            target_distance = min(MAX_PIPE_DISTANCE,
+                                  MIN_PIPE_DISTANCE + (master_speed - base_speed) * 30)
+            dynamic_pipe_freq = get_pipe_spawn_time(master_speed, target_distance)
             
             if now - last_pipe > dynamic_pipe_freq:
                 last_pipe = now
@@ -1261,7 +1269,7 @@ def main():
 
             # Aggiorna posizione tubi (fuori dal blocco di collisione)
             for p in pipes[:]:
-                p.update(speed=int(cur_speed))
+                p.update(speed=int(master_speed))
                 if p.x + PIPE_W < 0:
                     pipes.remove(p)
 
@@ -1332,9 +1340,9 @@ def main():
                 draw_ice_active(WIN, ice_until - now)            
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
-                draw_debug_info(WIN, base_speed, speed_lvl,
-                                now < zebra_until, now < ice_until,
-                                cur_speed, level_timer, current_gap)
+            draw_debug_info(WIN, base_speed, speed_lvl,
+                            now < zebra_until, now < ice_until,
+                            master_speed, level_timer, current_gap)
 
         if paused:
             draw_pause_overlay(WIN)
