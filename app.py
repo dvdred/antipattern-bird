@@ -105,15 +105,15 @@ GOLDEN_MIN_MS = 150_000          # 2,5 minuti (raro)
 GOLDEN_MAX_MS = 210_000          # 3,5 minuti
 
 # ---------- ICE PIPE ----------
-ICE_MIN_MS = 30_000          # 0,5 minuti
+ICE_MIN_MS = 30_000          # 0,5 minuti (medio)
 ICE_MAX_MS = 60_000          # 1 minuti
 
 
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-WIN_TIME = 240_000   # 4 minuti
-#WIN_TIME = 30_000   # DEBUG
+#WIN_TIME = 240_000   # 4 minuti
+WIN_TIME = 15_000   # DEBUG
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
@@ -914,6 +914,8 @@ def main():
                     # distinguiamo vittoria da game over
                     if won_waiting: # Vittoria
                         if event.key == pygame.K_SPACE:
+                            if now < win_block_until:          # <--- attendi 2 s
+                                continue
                             # Torna al menu di selezione dopo vittoria
                             won_waiting = False
                             waiting_restart = False
@@ -1038,6 +1040,7 @@ def main():
                             confirmed_shape = current_shape_selection
                             confirmed_color = current_color_selection
                             selecting_shape = False
+                            playing         = True
                             total_paused_time = 0
                             pause_start = 0
 
@@ -1147,6 +1150,7 @@ def main():
                 waiting_restart = True
                 game_over_start = now
                 playing = False
+                win_block_until = now + GAME_OVER_WAIT_MS
             elif level_timer >= LVL3_TIME and speed_lvl < 2.0:    # 150s -> lvl3
                 speed_lvl = 2.0; score_lvl = 3
             elif level_timer >= LVL2_TIME and speed_lvl < 1.5:    # 90s -> lvl2
@@ -1341,9 +1345,9 @@ def main():
                 draw_ice_active(WIN, ice_until - now)            
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
-            draw_debug_info(WIN, base_speed, speed_lvl,
-                            now < zebra_until, now < ice_until,
-                            master_speed, level_timer, current_gap)
+                draw_debug_info(WIN, base_speed, speed_lvl,
+                                now < zebra_until, now < ice_until,
+                                master_speed, level_timer, current_gap)
 
         if paused:
             draw_pause_overlay(WIN)
