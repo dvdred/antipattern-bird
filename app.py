@@ -29,6 +29,7 @@ point_sound    = get_resource_path('point.wav')
 rainbow_sound  = get_resource_path('rainbow.wav')
 lifeup_sound   = get_resource_path('lifeup.wav')
 lifedown_sound = get_resource_path('lifedown.wav')
+golden_sound   = get_resource_path('golden.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
 
 ICON = pygame.image.load(icon_path)
@@ -39,8 +40,9 @@ S_POINT    = pygame.mixer.Sound(point_sound)
 S_RAINBOW  = pygame.mixer.Sound(rainbow_sound)
 S_LIFEUP   = pygame.mixer.Sound(lifeup_sound)
 S_LIFEDOWN = pygame.mixer.Sound(lifedown_sound)
+S_GOLDEN = pygame.mixer.Sound(golden_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN):
     if snd:
         snd.set_volume(0.5)
 
@@ -95,6 +97,10 @@ ZEBRA_COLORS = [(0,0,0), (255,255,255)]
 ZEBRA_DURATION_MS = 8_000
 SPEED_MULTIPLIER = 1.5
 ZEBRA_POINTS_MULT = 2
+
+# ---------- GOLDEN PIPE ----------
+GOLDEN_MIN_MS = 150_000          # 2,5 minuti (raro)
+GOLDEN_MAX_MS = 210_000          # 3,5 minuti
 
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
@@ -379,6 +385,34 @@ class ZebraPipe(Pipe):
             band = pygame.Surface((strip_w, bot_h), pygame.SRCALPHA)
             band.fill((*col, alpha))
             surf.blit(band, (x_band, self.height + self.gap))
+
+class GoldenPipe(Pipe):
+    def __init__(self, x):
+        super().__init__(x, text="")
+        self.color = (255, 215, 0)        # dorato brillante
+        self.is_golden = True
+        self.passed = False
+
+    def draw(self, surf, alpha=255):
+        # riempi entrambi i lati con colore dorato
+        top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        top.fill((*self.color, alpha))
+        surf.blit(top, (self.x, 0))
+
+        bot_h = HEIGHT - self.height - PIPE_GAP - 50
+        bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        bottom.fill((*self.color, alpha))
+        surf.blit(bottom, (self.x, self.height + PIPE_GAP))
+
+        # scritta centrale
+        font_big = pygame.font.Font(font_emoji, 28)
+        txt = font_big.render("+1 ❤", True, (0, 0, 0))
+        rect = txt.get_rect(center=(self.x + PIPE_W // 2,
+                                    self.height // 2))
+        surf.blit(txt, rect)
+        rect.centery = self.height + PIPE_GAP + bot_h // 2
+        surf.blit(txt, rect)
+
 # ==============================================================
 #                      FUNZIONI UI
 # ==============================================================
@@ -729,7 +763,7 @@ def main():
     demo_land      = random.choice(LAND_COLORS)
     start_bg_color = random.choice(LIGHT_COLORS)
     rainbow_next   = pygame.time.get_ticks() + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
-
+    golden_next    = pygame.time.get_ticks() + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -1087,6 +1121,9 @@ def main():
                 if zebra_pending:
                     pipes.append(ZebraPipe(WIDTH, gap=current_gap))
                     zebra_pending = False
+                elif now >= golden_next:                                   # NEW
+                    pipes.append(GoldenPipe(WIDTH))                        # NEW
+                    golden_next = now + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
                 elif now >= rainbow_next:
                     pipes.append(RainbowPipe(WIDTH, gap=current_gap))
                     rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
@@ -1145,6 +1182,11 @@ def main():
                                 zebra_until = now + ZEBRA_DURATION_MS
                                 flash_until = now + FLASH_MS
                                 S_RAINBOW.play()
+                            elif getattr(p, 'is_golden', False):
+                                if lives < MAX_LIVES:
+                                    lives += 1
+                                S_GOLDEN.play()
+                                flash_until = now + FLASH_MS
                             else:
                                 S_POINT.play()
                             

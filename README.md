@@ -193,7 +193,8 @@ When you reach the **4-minute mark**:
 - 🌈 Rainbow/Zebra collected ( https://freesound.org/people/1bob/sounds/717770/ )
 - ❤️ Life gained ( https://freesound.org/people/LilMati/sounds/523650/ )
 - 💔 Life lost ( https://freesound.org/people/GameAudio/sounds/220174/ )
-
+- 🪙​ Golden Pipe ( https://freesound.org/people/Eschwabe3/sounds/460132/ )
+- 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
