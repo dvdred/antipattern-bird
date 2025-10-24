@@ -30,6 +30,7 @@ rainbow_sound  = get_resource_path('rainbow.wav')
 lifeup_sound   = get_resource_path('lifeup.wav')
 lifedown_sound = get_resource_path('lifedown.wav')
 golden_sound   = get_resource_path('golden.wav')
+ice_sound   = get_resource_path('ice.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
 
 ICON = pygame.image.load(icon_path)
@@ -41,8 +42,9 @@ S_RAINBOW  = pygame.mixer.Sound(rainbow_sound)
 S_LIFEUP   = pygame.mixer.Sound(lifeup_sound)
 S_LIFEDOWN = pygame.mixer.Sound(lifedown_sound)
 S_GOLDEN = pygame.mixer.Sound(golden_sound)
+S_ICE = pygame.mixer.Sound(ice_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE):
     if snd:
         snd.set_volume(0.5)
 
@@ -101,6 +103,11 @@ ZEBRA_POINTS_MULT = 2
 # ---------- GOLDEN PIPE ----------
 GOLDEN_MIN_MS = 150_000          # 2,5 minuti (raro)
 GOLDEN_MAX_MS = 210_000          # 3,5 minuti
+
+# ---------- ICE PIPE ----------
+ICE_MIN_MS = 30_000          # 0,5 minuti (raro)
+ICE_MAX_MS = 60_000          # 1 minuti
+
 
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
@@ -413,6 +420,31 @@ class GoldenPipe(Pipe):
         rect.centery = self.height + PIPE_GAP + bot_h // 2
         surf.blit(txt, rect)
 
+class IcePipe(Pipe):
+    def __init__(self, x):
+        super().__init__(x, text="")
+        self.color = (173, 216, 230)        # light-blue ghiaccio
+        self.is_ice = True
+
+    def draw(self, surf, alpha=255):
+        # disegno identico a GoldenPipe ma colore diverso
+        top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        top.fill((*self.color, alpha))
+        surf.blit(top, (self.x, 0))
+
+        bot_h = HEIGHT - self.height - PIPE_GAP - 50
+        bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        bottom.fill((*self.color, alpha))
+        surf.blit(bottom, (self.x, self.height + PIPE_GAP))
+
+        # emoji al centro
+        font_big = pygame.font.Font(font_emoji, 28) or pygame.font.SysFont(None, 28)
+        txt = font_big.render("🧊", True, (0, 0, 0))
+        rect = txt.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
+        surf.blit(txt, rect)
+        rect.centery = self.height + PIPE_GAP + bot_h // 2
+        surf.blit(txt, rect)
+
 # ==============================================================
 #                      FUNZIONI UI
 # ==============================================================
@@ -638,7 +670,13 @@ def draw_zebra_active(surf, ms_left):
     rect = txt.get_rect(center=(WIDTH//2, 40))
     surf.blit(txt, rect)
 
-def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed, game_time_ms, pipe_gap):
+def draw_ice_active(surf, ms_left):
+    font = pygame.font.Font(font_emoji, 26) or pygame.font.SysFont(None, 26)
+    txt = font.render(f"❄️ ICE TIME! {max(0, ms_left//1000)}s", True, (30, 144, 255))
+    rect = txt.get_rect(center=(WIDTH//2, 40))
+    surf.blit(txt, rect)
+
+def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, cur_speed, game_time_ms, pipe_gap):
     """Mostra informazioni di debug sulla velocità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
     
@@ -667,6 +705,8 @@ def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, cur_speed, game_t
     surf.blit(txt3, (15, y_offset + 60))
     
     zebra_mult = SPEED_MULTIPLIER if zebra_active else 1.0
+    ice_mult   = 0.5                if ice_active   else 1.0
+    cur_speed  = base_speed * speed_lvl * zebra_mult * ice_mult
     color_zebra = (255, 100, 100) if zebra_active else (255, 255, 255)
     txt4 = font_debug.render(f"Zebra Mult: {zebra_mult:.1f}x", True, color_zebra)
     surf.blit(txt4, (15, y_offset + 80))
@@ -764,6 +804,7 @@ def main():
     start_bg_color = random.choice(LIGHT_COLORS)
     rainbow_next   = pygame.time.get_ticks() + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
     golden_next    = pygame.time.get_ticks() + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
+    ice_next       = pygame.time.get_ticks() + random.randint(ICE_MIN_MS, ICE_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -771,6 +812,9 @@ def main():
     zebra_next_min   = pygame.time.get_ticks() + 60_000
     zebra_pending    = False
     base_speed       = 2.5
+
+# ----- ICE TIMER -----
+    ice_until      = 0
 
 # ----- LIVELLI -----
     level_timer      = 0
@@ -1121,8 +1165,11 @@ def main():
                 if zebra_pending:
                     pipes.append(ZebraPipe(WIDTH, gap=current_gap))
                     zebra_pending = False
-                elif now >= golden_next:                                   # NEW
-                    pipes.append(GoldenPipe(WIDTH))                        # NEW
+                elif now >= ice_next and ice_until <= now:
+                    pipes.append(IcePipe(WIDTH))
+                    ice_next = now + random.randint(ICE_MIN_MS, ICE_MAX_MS)
+                elif now >= golden_next:
+                    pipes.append(GoldenPipe(WIDTH))
                     golden_next = now + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
                 elif now >= rainbow_next:
                     pipes.append(RainbowPipe(WIDTH, gap=current_gap))
@@ -1187,6 +1234,10 @@ def main():
                                     lives += 1
                                 S_GOLDEN.play()
                                 flash_until = now + FLASH_MS
+                            elif getattr(p, 'is_ice', False):           # NEW
+                                ice_until = now + 8_000                 # 8 s
+                                S_ICE.play()
+                                flash_until = now + FLASH_MS                            
                             else:
                                 S_POINT.play()
                             
@@ -1277,9 +1328,13 @@ def main():
                 p.draw(WIN)
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
+            if now < ice_until:
+                draw_ice_active(WIN, ice_until - now)            
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
-                draw_debug_info(WIN, base_speed, speed_lvl, now < zebra_until, cur_speed, level_timer, current_gap)
+                draw_debug_info(WIN, base_speed, speed_lvl,
+                                now < zebra_until, now < ice_until,
+                                cur_speed, level_timer, current_gap)
 
         if paused:
             draw_pause_overlay(WIN)
