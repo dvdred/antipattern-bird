@@ -1145,6 +1145,7 @@ def main():
                     best = score
                 won_waiting = True
                 waiting_restart = True
+                game_over_start = now
                 playing = False
             elif level_timer >= LVL3_TIME and speed_lvl < 2.0:    # 150s -> lvl3
                 speed_lvl = 2.0; score_lvl = 3
