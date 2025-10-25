@@ -112,8 +112,8 @@ ICE_MAX_MS = 60_000          # 1 minuti
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-#WIN_TIME = 240_000   # 4 minuti
-WIN_TIME = 15_000   # DEBUG
+WIN_TIME = 240_000   # 4 minuti
+#WIN_TIME = 15_000   # DEBUG
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
@@ -874,6 +874,54 @@ def main():
 
 # -------- INPUT --------
         for event in pygame.event.get():
+            # ===== SUPPORTO TOUCH PER ANDROID =====
+                        # ===== SUPPORTO TOUCH PER ANDROID =====
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Gestione click durante il gioco (attivo o in pausa)
+                if playing and not waiting_restart and not selecting_shape:
+                    mouse_pos = event.pos
+                    screen = pygame.display.get_surface()
+                    sw, sh = screen.get_size()
+                    scale = min(sw / WIDTH, sh / HEIGHT)
+                    new_w, new_h = int(WIDTH * scale), int(HEIGHT * scale)
+                    ox, oy = (sw - new_w) // 2, (sh - new_h) // 2
+                    
+                    log_x = (mouse_pos[0] - ox) / scale
+                    log_y = (mouse_pos[1] - oy) / scale
+                    
+                    # Area tap per pausa (angolo in alto a destra)
+                    pause_btn = pygame.Rect(WIDTH - 60, 50, 50, 50)
+                    if pause_btn.collidepoint(log_x, log_y):
+                        if not paused:
+                            pause_start = pygame.time.get_ticks()
+                        else:
+                            total_paused_time += pygame.time.get_ticks() - pause_start
+                        paused = not paused
+                    elif not paused:
+                        # Tap ovunque per saltare (solo se NON in pausa)
+                        bird.jump()
+                        for _ in range(5):
+                            particles.append(Particle(bird.x + bird.size//2,
+                                                    bird.y + bird.size,
+                                                    bird.color))
+                
+                elif not playing and not selecting_shape and not waiting_restart:
+                    # Touch per iniziare dalla schermata iniziale
+                    mouse_pos = event.pos
+                    screen = pygame.display.get_surface()
+                    sw, sh = screen.get_size()
+                    scale = min(sw / WIDTH, sh / HEIGHT)
+                    new_w, new_h = int(WIDTH * scale), int(HEIGHT * scale)
+                    ox, oy = (sw - new_w) // 2, (sh - new_h) // 2
+                    
+                    log_x = (mouse_pos[0] - ox) / scale
+                    log_y = (mouse_pos[1] - oy) / scale
+                    
+                    # Bottone START
+                    btn = pygame.Rect(0, 0, 230, 45)
+                    btn.center = (WIDTH//2, HEIGHT//2 + 40)
+                    if btn.collidepoint(log_x, log_y):
+                        selecting_shape = True
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN and selecting_shape:
@@ -1337,6 +1385,22 @@ def main():
             draw_score(WIN, score)
             draw_lives(WIN, lives)
             draw_level(WIN, 1 if score_lvl==1 else (2 if score_lvl==2 else 3))
+            # Bottone pausa touch-friendly (dopo draw_level)
+            pause_btn_rect = pygame.Rect(WIDTH - 60, 10, 50, 50)
+            pause_color = (100, 100, 100, 180) if not paused else (50, 200, 50, 180)
+            pause_surf = pygame.Surface((50, 50), pygame.SRCALPHA)
+            pause_surf.fill(pause_color)
+            
+            # Disegna icona pausa
+            if not paused:
+                pygame.draw.rect(pause_surf, (255, 255, 255), (15, 10, 8, 30))
+                pygame.draw.rect(pause_surf, (255, 255, 255), (27, 10, 8, 30))
+            else:
+                # Triangolo play
+                pygame.draw.polygon(pause_surf, (255, 255, 255), 
+                                  [(15, 10), (15, 40), (35, 25)])
+            
+            WIN.blit(pause_surf, (WIDTH - 60, 50))
             for p in particles:
                 p.draw(WIN)
             if now < zebra_until:
