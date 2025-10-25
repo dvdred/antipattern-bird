@@ -88,9 +88,9 @@ jobs:
 
   build-android:
     runs-on: ubuntu-22.04
-    if: |
-      startsWith(github.ref_name, 'v') &&
-      (endsWith(github.ref_name, '-stable') || endsWith(github.ref_name, '-apk'))
+    #if: |
+    #  startsWith(github.ref_name, 'v') &&
+    #  (endsWith(github.ref_name, '-stable') || endsWith(github.ref_name, '-apk'))
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
