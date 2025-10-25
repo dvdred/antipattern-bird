@@ -88,22 +88,19 @@ jobs:
 
   build-android:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer:latest
     steps:
       - uses: actions/checkout@v4
 
-      # Build APK usando buildozer
-      - name: Build Android APK with Buildozer
-        uses: ArtiomTr/buildozer-action@v1
-        id: buildozer
-        with:
-          command: buildozer android debug
-          buildozer_version: stable
+      - name: Build APK with Buildozer
+        run: |
+          buildozer android debug
 
-      # Rinomina APK per release
-      - name: Rename APK
+      - name: Find and prepare APK
         run: |
           mkdir -p output
-          find .buildozer/android/platform/build-*/build/outputs/apk/debug -name "*.apk" -exec cp {} output/antipattern-bird.apk \;
+          find . -name "*.apk" -exec cp {} output/antipattern-bird.apk \;
 
       - uses: actions/upload-artifact@v4
         with:
