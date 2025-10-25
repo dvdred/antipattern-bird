@@ -36,3 +36,4 @@ warn_on_root = 1
 p4a.branch = develop
 p4a.use_pip_install_args = --no-user
 android.accept_sdk_license = True
+android.ndk_args = -D__ANDROID_API__=__ANDROID_MIN_SDK_VERSION__
