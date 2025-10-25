@@ -9,8 +9,7 @@ source.include_patterns = assets/*,*.py,*.png,*.wav,*.ttf
 
 version = 1.0.0
 
-# CAMBIA QUESTA RIGA - usa pygame dalla recipe p4a
-requirements = python3,kivy,pygame==2.1.3.1
+requirements = python3,kivy,pygame
 
 orientation = portrait
 fullscreen = 1
@@ -25,7 +24,6 @@ android.ndk = 25b
 android.accept_sdk_license = True
 android.archs = arm64-v8a,armeabi-v7a
 
-# IMPORTANTE: forza l'uso della recipe pygame di p4a
 p4a.bootstrap = sdl2
 
 author = dvdred@gmail.com
