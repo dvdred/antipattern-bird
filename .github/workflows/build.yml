@@ -95,9 +95,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Use system Python (bypass venv)
-              run: |
-                echo "PYTHON=/usr/bin/python3" >> $GITHUB_ENV
-                echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_EN     
+        run: |
+          echo "PYTHON=/usr/bin/python3" >> $GITHUB_ENV
+          echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_EN     
 
       - name: Build APK with Buildozer
         working-directory: ${{ github.workspace }}
