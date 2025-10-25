@@ -9,7 +9,8 @@ source.include_patterns = assets/*,*.py,*.png,*.wav,*.ttf
 
 version = 1.0.0
 
-requirements = python3,kivy,pygame,pygame-ce
+# IMPORTANTE: Solo pygame-ce, non pygame! E python3 con versione specifica
+requirements = python3==3.10.14,kivy,pygame-ce
 
 orientation = portrait
 fullscreen = 1
@@ -18,20 +19,20 @@ fullscreen = 1
 icon.filename = icon32.png
 presplash.filename = icon32.png
 
-# Permessi Android
-android.permissions = INTERNET,VIBRATE
+# Permessi Android (rimosso INTERNET se non serve)
+android.permissions = VIBRATE
 android.api = 31
 android.minapi = 21
 android.ndk = 25b
 android.accept_sdk_license = True
-android.arch = armeabi-v7a
+android.archs = arm64-v8a,armeabi-v7a
 
 # Meta
 author = dvdred@gmail.com
-android.archs = arm64-v8a,armeabi-v7a
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
+p4a.branch = develop
 p4a.use_pip_install_args = --no-user
 android.accept_sdk_license = True
