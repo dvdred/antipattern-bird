@@ -34,3 +34,4 @@ android.archs = arm64-v8a,armeabi-v7a
 log_level = 2
 warn_on_root = 1
 p4a.use_pip_install_args = --no-user
+android.accept_sdk_license = True
