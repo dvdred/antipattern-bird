@@ -9,35 +9,16 @@ import pygame.freetype
 import random
 import time
 
-# Rileva se siamo su Android
-IS_ANDROID = 'ANDROID_PRIVATE' in os.environ
-
 pygame.init()
-# Rileva se siamo su Android
-IS_ANDROID = 'ANDROID_PRIVATE' in os.environ
-
-# Su Android usa risoluzione nativa, su desktop usa dimensioni fisse
-if IS_ANDROID:
-    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=2048)
-    info = pygame.display.Info()
-    WIDTH, HEIGHT = info.current_w, info.current_h
-    SCREEN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
-else:
-    pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-    WIDTH, HEIGHT = 500, 750
-    SCREEN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-
-WIN = pygame.Surface((WIDTH, HEIGHT))
+pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+WIDTH, HEIGHT = 500, 750
+SCREEN = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE) # finestra ridimensionabile
+WIN = pygame.Surface((WIDTH, HEIGHT)) # surface logica su cui continui a disegnare
 pygame.display.set_caption("AntiPattern Bird Epic Game")
 
 def get_resource_path(relative_path):
-    # Android
-    if 'ANDROID_PRIVATE' in os.environ:
-        return os.path.join(os.environ['ANDROID_PRIVATE'], relative_path)
-    # PyInstaller
-    elif getattr(sys, 'frozen', False):
+    if getattr(sys, 'frozen', False):
         base_path = sys._MEIPASS
-    # Sviluppo normale
     else:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)

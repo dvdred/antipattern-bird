@@ -34,7 +34,7 @@ jobs:
           --add-data "ice.wav;."
           --add-data "DejaVuSansMono.ttf;."
           --icon "icon32.png"
-          --name antipattern-bird main.py
+          --name antipattern-bird common-main.py
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,7 +72,7 @@ jobs:
           --add-data "golden.wav:."
           --add-data "ice.wav:."
           --add-data "DejaVuSansMono.ttf:."
-          --name antipattern-bird main.py
+          --name antipattern-bird common-main.py
 
       - uses: actions/upload-artifact@v4
         with:
@@ -88,6 +88,9 @@ jobs:
 
   build-android:
     runs-on: ubuntu-22.04
+    if: |
+      startsWith(github.ref_name, 'v') &&
+      (endsWith(github.ref_name, '-stable') || endsWith(github.ref_name, '-apk'))
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
