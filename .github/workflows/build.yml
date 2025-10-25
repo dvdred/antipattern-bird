@@ -85,7 +85,7 @@ jobs:
           files: dist/antipattern-bird
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
   build-android:
     runs-on: ubuntu-latest
     container:
@@ -94,23 +94,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-  
+
       - name: Build APK with Buildozer
         run: buildozer android debug
-  
+
       - name: Find and prepare APK
         run: |
           mkdir -p output
           find . -name "*.apk" -exec cp {} output/antipattern-bird.apk \;
-  
+
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-android
           path: output/antipattern-bird.apk
-  
+
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: output/antipattern-bird.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
