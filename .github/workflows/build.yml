@@ -102,10 +102,16 @@ jobs:
 
       - name: Build APK with Buildozer
         working-directory: ${{ github.workspace }}
-        env:
-          PYTHON: /usr/bin/python3
-          BUILDOZER_WARN_ON_ROOT: 0
-        run: yes | buildozer android debug          
+        run: |
+          # esce dal venv (ignora errore se non attivo)
+          deactivate 2>/dev/null || true
+          # togli il venv dal PATH
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+          # python *globale* obbligatorio
+          export PYTHON=/usr/bin/python3
+          # (opzionale) elimina --user dai pip interni
+          export PIP_USER=false
+          yes | buildozer android debug         
 
       - name: Find and prepare APK
         working-directory: ${{ github.workspace }}
