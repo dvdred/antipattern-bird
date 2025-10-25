@@ -90,7 +90,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: kivy/buildozer:latest
-      #options: --user root
+      options: --user root
     steps:
       - uses: actions/checkout@v4
 
