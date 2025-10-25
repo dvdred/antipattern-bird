@@ -86,30 +86,182 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-android:
-    runs-on: ubuntu-latest
-    container:
-      image: kivy/buildozer:latest
+  claude-sonnet-4-5-20250929-thinking-32k
+
+YAML
+
+name: Build and Release
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
         with:
-          fetch-depth: 0
-  
-      - name: Build APK with Buildozer
+          python-version: '3.11'
+
+      - run: pip install pyinstaller pillow
+
+      - run: pip install -r requirements.txt
+
+      - run: >
+          pyinstaller --onefile --noconsole
+          --add-data "icon32.png;."
+          --add-data "jump.wav;."
+          --add-data "lifedown.wav;."
+          --add-data "lifeup.wav;."
+          --add-data "point.wav;."
+          --add-data "rainbow.wav;."
+          --add-data "golden.wav;."
+          --add-data "ice.wav;."
+          --add-data "DejaVuSansMono.ttf;."
+          --icon "icon32.png"
+          --name antipattern-bird app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antipattern-bird-win-x64
+          path: dist/antipattern-bird.exe
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/antipattern-bird.exe
         env:
-          BUILDOZER_WARN_ON_ROOT: 0
-        run: buildozer android debug
-  
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - run: pip install pyinstaller pillow
+
+      - run: pip install -r requirements.txt
+
+      - run: >
+          pyinstaller --onefile
+          --add-data "icon32.png:."
+          --add-data "jump.wav:."
+          --add-data "lifedown.wav:."
+          --add-data "lifeup.wav:."
+          --add-data "point.wav:."
+          --add-data "rainbow.wav:."
+          --add-data "golden.wav:."
+          --add-data "ice.wav:."
+          --add-data "DejaVuSansMono.ttf:."
+          --name antipattern-bird app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antipattern-bird-linux-x64
+          path: dist/antipattern-bird
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/antipattern-bird
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-android:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Cache Buildozer global directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git \
+            zip \
+            unzip \
+            openjdk-17-jdk \
+            autoconf \
+            libtool \
+            pkg-config \
+            zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev
+
+      - name: Install Buildozer
+        run: |
+          pip install --upgrade pip
+          pip install buildozer
+          pip install cython
+
+      - name: Initialize buildozer.spec if not exists
+        run: |
+          if [ ! -f buildozer.spec ]; then
+            buildozer init
+            # Personalizza buildozer.spec
+            sed -i 's/title = .*/title = Antipattern Bird/' buildozer.spec
+            sed -i 's/package.name = .*/package.name = antipatternbird/' buildozer.spec
+            sed -i 's/package.domain = .*/package.domain = org.antipattern/' buildozer.spec
+            sed -i 's/source.dir = .*/source.dir = ./' buildozer.spec
+            sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas,wav,ttf/' buildozer.spec
+            # Aggiungi i requisiti necessari
+            sed -i 's/requirements = .*/requirements = python3,kivy,pillow,pygame/' buildozer.spec
+            # Imposta permessi
+            sed -i 's/#android.permissions = .*/android.permissions = INTERNET/' buildozer.spec
+            # Imposta orientamento
+            sed -i 's/#orientation = .*/orientation = portrait/' buildozer.spec
+          fi
+
+      - name: Build APK with Buildozer
+        run: |
+          yes | buildozer -v android debug
+
       - name: Find and prepare APK
         run: |
           mkdir -p output
           find . -name "*.apk" -exec cp {} output/antipattern-bird.apk \;
-  
+          ls -lh output/
+
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-android
           path: output/antipattern-bird.apk
-  
+
       - uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
