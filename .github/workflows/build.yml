@@ -87,35 +87,30 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-android:
-    runs-on: ubuntu-latest
-    container:
-      image: kivy/buildozer:latest
-      options: --user root
-    steps:
-      - uses: actions/checkout@v4
+  runs-on: ubuntu-latest
+  container:
+    image: kivy/buildozer:latest
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Build APK with Buildozer
-        working-directory: ${{ github.workspace }}
-        run: |
-          deactivate 2>/dev/null || true
-          export PYTHON=/usr/bin/python3
-          export PIP_USER=false
-          buildozer android debug         
+    - name: Build APK with Buildozer
+      run: buildozer android debug
 
-      - name: Find and prepare APK
-        working-directory: ${{ github.workspace }}
-        run: |
-          mkdir -p output
-          find . -name "*.apk" -exec cp {} output/antipattern-bird.apk \;
+    - name: Find and prepare APK
+      run: |
+        mkdir -p output
+        find . -name "*.apk" -exec cp {} output/antipattern-bird.apk \;
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: antipattern-bird-android
-          path: ${{ github.workspace }}/output/antipattern-bird.apk
+    - uses: actions/upload-artifact@v4
+      with:
+        name: antipattern-bird-android
+        path: output/antipattern-bird.apk
 
-      - uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: ${{ github.workspace }}/output/antipattern-bird.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: output/antipattern-bird.apk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
