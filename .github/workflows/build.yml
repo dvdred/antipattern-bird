@@ -178,6 +178,100 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  claude-sonnet-4-5-20250929-thinking-32k
+
+Hai ragione! C'è un problema di formattazione nel blocco multilinea. Ecco il file corretto:
+
+YAML
+
+name: Build and Release
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - run: pip install pyinstaller pillow
+
+      - run: pip install -r requirements.txt
+
+      - run: >
+          pyinstaller --onefile --noconsole
+          --add-data "icon32.png;."
+          --add-data "jump.wav;."
+          --add-data "lifedown.wav;."
+          --add-data "lifeup.wav;."
+          --add-data "point.wav;."
+          --add-data "rainbow.wav;."
+          --add-data "golden.wav;."
+          --add-data "ice.wav;."
+          --add-data "DejaVuSansMono.ttf;."
+          --icon "icon32.png"
+          --name antipattern-bird app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antipattern-bird-win-x64
+          path: dist/antipattern-bird.exe
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/antipattern-bird.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - run: pip install pyinstaller pillow
+
+      - run: pip install -r requirements.txt
+
+      - run: >
+          pyinstaller --onefile
+          --add-data "icon32.png:."
+          --add-data "jump.wav:."
+          --add-data "lifedown.wav:."
+          --add-data "lifeup.wav:."
+          --add-data "point.wav:."
+          --add-data "rainbow.wav:."
+          --add-data "golden.wav:."
+          --add-data "ice.wav:."
+          --add-data "DejaVuSansMono.ttf:."
+          --name antipattern-bird app.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: antipattern-bird-linux-x64
+          path: dist/antipattern-bird
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/antipattern-bird
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-android:
     runs-on: ubuntu-22.04
     steps:
@@ -207,21 +301,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git \
-            zip \
-            unzip \
-            openjdk-17-jdk \
-            autoconf \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo5 \
-            cmake \
-            libffi-dev \
-            libssl-dev
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
 
       - name: Install Buildozer
         run: |
@@ -233,17 +313,13 @@ jobs:
         run: |
           if [ ! -f buildozer.spec ]; then
             buildozer init
-            # Personalizza buildozer.spec
             sed -i 's/title = .*/title = Antipattern Bird/' buildozer.spec
             sed -i 's/package.name = .*/package.name = antipatternbird/' buildozer.spec
             sed -i 's/package.domain = .*/package.domain = org.antipattern/' buildozer.spec
             sed -i 's/source.dir = .*/source.dir = ./' buildozer.spec
             sed -i 's/source.include_exts = .*/source.include_exts = py,png,jpg,kv,atlas,wav,ttf/' buildozer.spec
-            # Aggiungi i requisiti necessari
             sed -i 's/requirements = .*/requirements = python3,kivy,pillow,pygame/' buildozer.spec
-            # Imposta permessi
             sed -i 's/#android.permissions = .*/android.permissions = INTERNET/' buildozer.spec
-            # Imposta orientamento
             sed -i 's/#orientation = .*/orientation = portrait/' buildozer.spec
           fi
 
