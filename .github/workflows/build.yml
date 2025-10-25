@@ -94,11 +94,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Use system Python (bypass venv)
+              run: |
+                echo "PYTHON=/usr/bin/python3" >> $GITHUB_ENV
+                echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_EN     
+
       - name: Build APK with Buildozer
         working-directory: ${{ github.workspace }}
-        run: |
-          deactivate || true
-          yes | buildozer android debug
+        env:
+          PYTHON: /usr/bin/python3
+        run: yes | buildozer android debug
         env:
           BUILDOZER_WARN_ON_ROOT: 0
 
