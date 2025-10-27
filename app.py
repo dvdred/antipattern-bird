@@ -1230,10 +1230,17 @@ def main():
 
             # Calcola distanza pipe dinamica (più veloce = più distanti)
             target_distance = min(MAX_PIPE_DISTANCE,
-                                  MIN_PIPE_DISTANCE + (master_speed - base_speed) * 30)
+                                MIN_PIPE_DISTANCE + (master_speed - base_speed) * 30)
             dynamic_pipe_freq = get_pipe_spawn_time(master_speed, target_distance)
-            
-            if now - last_pipe > dynamic_pipe_freq:
+
+            # Controllo doppio: tempo E distanza (previene spawn anomali durante cambi di velocità)
+            can_spawn_time = now - last_pipe > dynamic_pipe_freq
+            can_spawn = can_spawn_time
+            if pipes:
+                last_pipe_x = pipes[-1].x
+                can_spawn = can_spawn and (WIDTH - last_pipe_x >= target_distance)
+
+            if can_spawn:
                 last_pipe = now
                 # Calcola gap in base al livello
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
