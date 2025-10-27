@@ -32,6 +32,7 @@ lifedown_sound = get_resource_path('lifedown.wav')
 golden_sound   = get_resource_path('golden.wav')
 ice_sound   = get_resource_path('ice.wav')
 legacy_sound   = get_resource_path('legacy.wav')
+debt_sound = get_resource_path('debt.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
 
 ICON = pygame.image.load(icon_path)
@@ -45,8 +46,9 @@ S_LIFEDOWN = pygame.mixer.Sound(lifedown_sound)
 S_GOLDEN = pygame.mixer.Sound(golden_sound)
 S_ICE = pygame.mixer.Sound(ice_sound)
 S_LEGACY = pygame.mixer.Sound(legacy_sound)
+S_DEBT = pygame.mixer.Sound(debt_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT):
     if snd:
         snd.set_volume(0.5)
 
@@ -115,6 +117,13 @@ LEGACY_MIN_MS = 65_000       # 65 secondi
 LEGACY_MAX_MS = 80_000       # 80 secondi
 LEGACY_POINTS = 4
 LEGACY_GAP_REDUCTION = 25
+
+# ---------- TECHNICAL DEBT PIPE ----------
+DEBT_MIN_MS = 45_000         # 45 secondi
+DEBT_MAX_MS = 70_000         # 70 secondi
+DEBT_POINTS = 5              # Moltiplicato per livello
+DEBT_DURATION_MS = 8_000     # 8 secondi
+DEBT_GRAVITY_MULT = 1.2      # +20% gravità
 
 # ---------- LEVEL TIMEs ----------
 LVL2_TIME = 90_000
@@ -265,8 +274,8 @@ class Bird:
         if S_JUMP:
             S_JUMP.play()
 
-    def update(self):
-        self.vel += GRAVITY
+    def update(self, gravity_mult=1.0):
+        self.vel += GRAVITY * gravity_mult
         self.y += self.vel
         if self.y < 0:
             self.y, self.vel = 0, 0
@@ -512,6 +521,70 @@ class LegacyPipe(Pipe):
             x_txt = self.x + (PIPE_W - txt.get_width()) // 2
             if txt.get_width() <= PIPE_W - 4:
                 surf.blit(txt, (x_txt, self.height + self.gap + y_line))
+
+class TechnicalDebtPipe(Pipe):
+    """Pipe grigio scuro che aumenta la gravità del 20% per 8 secondi, ma dà +5 punti × livello"""
+    def __init__(self, x, base_gap=180):
+        super().__init__(x, text="", gap=base_gap)
+        self.color = (64, 64, 64)  # Grigio scuro pesante
+        self.is_debt = True
+        self.passed = False
+
+    def draw(self, surf, alpha=255):
+        # ---- bordo nero spesso 3 px (aspetto pesante) ----
+        pygame.draw.rect(surf, (0,0,0), (self.x-3, -3, PIPE_W+6, self.height+6), 3)
+        pygame.draw.rect(surf, (0,0,0), (self.x-3, self.height+self.gap-3, PIPE_W+6,
+                                        HEIGHT-self.height-self.gap-50+6), 3)
+        
+        # Riempimento grigio scuro
+        top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        top.fill((*self.color, alpha))
+        surf.blit(top, (self.x, 0))
+
+        bot_h = HEIGHT - self.height - self.gap - 50
+        bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        bottom.fill((*self.color, alpha))
+        surf.blit(bottom, (self.x, self.height + self.gap))
+
+        # Testo "Technical_Debt" spezzato
+        font_small = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
+        lines = ["TE", "CH", "NI", "CA", "L_", "DE", "BT"]
+        total_h = len(lines) * 20
+        
+        # Disegna nella parte superiore
+        start_y = max(5, (self.height - total_h) // 2)
+        for i, line in enumerate(lines):
+            y_line = start_y + i * 20
+            if y_line + 20 > self.height - 5:
+                continue
+            txt = font_small.render(line, True, (200, 200, 200))  # Grigio chiaro
+            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
+            if txt.get_width() <= PIPE_W - 4:
+                surf.blit(txt, (x_txt, y_line))
+
+        # Disegna nella parte inferiore
+        start_y_bot = max(5, (bot_h - total_h) // 2)
+        for i, line in enumerate(lines):
+            y_line = start_y_bot + i * 20
+            if y_line + 20 > bot_h - 5:
+                continue
+            txt = font_small.render(line, True, (200, 200, 200))
+            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
+            if txt.get_width() <= PIPE_W - 4:
+                surf.blit(txt, (x_txt, self.height + self.gap + y_line))
+        
+        # Icona ⚓ al centro (simbolo di peso/debito)
+        font_big = pygame.font.Font(font_emoji, 36) or pygame.font.SysFont(None, 36)
+        icon = font_big.render("⚓", True, (255, 200, 0))  # Oro scuro
+        
+        # Top center
+        rect = icon.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
+        surf.blit(icon, rect)
+        
+        # Bottom center
+        rect.centery = self.height + self.gap + bot_h // 2
+        surf.blit(icon, rect)
+
 # ==============================================================
 #                      FUNZIONI UI
 # ==============================================================
@@ -743,17 +816,24 @@ def draw_ice_active(surf, ms_left):
     rect = txt.get_rect(center=(WIDTH//2, 70))
     surf.blit(txt, rect)
 
-def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, cur_speed, game_time_ms, pipe_gap):
-    """Mostra informazioni di debug sulla velocità e tempo di gioco"""
+def draw_debt_indicator(surf, bird_x, bird_y, bird_size):
+    """Disegna l'icona ⚓ vicino all'uccello quando il debito tecnico è attivo"""
+    font = pygame.font.Font(font_emoji, 24) or pygame.font.SysFont(None, 24)
+    icon = font.render("⚓", True, (255, 100, 100))  # Rosso per indicare pericolo
+    # Posiziona a destra dell'uccello
+    surf.blit(icon, (bird_x + bird_size + 5, bird_y + bird_size // 2 - 12))
+
+def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_active, cur_speed, game_time_ms, pipe_gap, gravity_mult):
+    """Mostra informazioni di debug sulla velocità, gravità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
     
-    # Background semi-trasparente (aumentato per fare spazio al gap)
-    debug_bg = pygame.Surface((250, 160), pygame.SRCALPHA)
+    # Background semi-trasparente (aumentato per gravità)
+    debug_bg = pygame.Surface((250, 180), pygame.SRCALPHA)
     debug_bg.fill((0, 0, 0, 180))
-    surf.blit(debug_bg, (10, HEIGHT - 190))
+    surf.blit(debug_bg, (10, HEIGHT - 210))
     
     # Informazioni
-    y_offset = HEIGHT - 165
+    y_offset = HEIGHT - 185
     
     txt1 = font_debug.render(f"DEBUG MODE", True, (255, 255, 0))
     surf.blit(txt1, (15, y_offset))
@@ -785,6 +865,15 @@ def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, cur_s
     # Pipe Gap
     txt6 = font_debug.render(f"Pipe Gap: {pipe_gap}", True, (255, 255, 255))
     surf.blit(txt6, (15, y_offset + 100))
+    
+    # Gravità (evidenziata se debt attivo)
+    actual_gravity = GRAVITY * gravity_mult
+    color_gravity = (255, 100, 100) if debt_active else (255, 255, 255)
+    txt7 = font_debug.render(f"Gravity: {actual_gravity:.2f}", True, color_gravity)
+    surf.blit(txt7, (15, y_offset + 120))
+    
+    txt8 = font_debug.render(f"Grav Mult: {gravity_mult:.1f}x", True, color_gravity)
+    surf.blit(txt8, (15, y_offset + 140))
 
 def present(surf):
     # surf è la surface logica (WIN) 500x750
@@ -873,6 +962,7 @@ def main():
     golden_next    = pygame.time.get_ticks() + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
     ice_next       = pygame.time.get_ticks() + random.randint(ICE_MIN_MS, ICE_MAX_MS)
     legacy_next    = pygame.time.get_ticks() + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
+    debt_next      = pygame.time.get_ticks() + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -883,6 +973,9 @@ def main():
 
 # ----- ICE TIMER -----
     ice_until      = 0
+
+# ----- DEBT TIMER -----
+    debt_until     = 0
 
 # ----- LIVELLI -----
     level_timer      = 0
@@ -1034,6 +1127,7 @@ def main():
                             land_color = random.choice(LAND_COLORS)
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
+                            debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
@@ -1139,6 +1233,7 @@ def main():
                             land_color = random.choice(LAND_COLORS)
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
+                            debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
@@ -1196,8 +1291,9 @@ def main():
                 bird.set_transparent(128 if (invuln_time // 100) % 2 else 180)
             else:
                 bird.set_transparent(255)
-
-            bird.update()
+            # Applica gravità aumentata se debt è attivo
+            debt_mult = DEBT_GRAVITY_MULT if now < debt_until else 1.0
+            bird.update(gravity_mult=debt_mult)
 
 # ----- aggiorna timer livello -----
             level_timer += dt
@@ -1251,6 +1347,9 @@ def main():
                 elif now >= ice_next and ice_until <= now:
                     pipes.append(IcePipe(WIDTH))
                     ice_next = now + random.randint(ICE_MIN_MS, ICE_MAX_MS)
+                elif now >= debt_next and debt_until <= now:
+                    pipes.append(TechnicalDebtPipe(WIDTH, base_gap=current_gap))
+                    debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                 elif now >= legacy_next:
                     pipes.append(LegacyPipe(WIDTH, base_gap=current_gap))
                     legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
@@ -1306,6 +1405,8 @@ def main():
                         if not p.passed and p.x + PIPE_W < bird.x:
                             p.passed = True
                             pts = 1
+                            skip_zebra_mult = False  # Flag per debt pipe
+                            
                             if getattr(p, 'is_rainbow', False):
                                 pts = RAINBOW_POINTS
                                 flash_until = now + FLASH_MS
@@ -1324,6 +1425,12 @@ def main():
                                 ice_until = now + 8_000
                                 S_ICE.play()
                                 flash_until = now + FLASH_MS
+                            elif getattr(p, 'is_debt', False):
+                                pts = DEBT_POINTS
+                                debt_until = now + DEBT_DURATION_MS
+                                S_DEBT.play()
+                                flash_until = now + FLASH_MS
+                                skip_zebra_mult = True  # Debt NON beneficia di zebra mode
                             elif getattr(p, 'is_legacy', False):
                                 pts = LEGACY_POINTS
                                 S_LEGACY.play()
@@ -1332,13 +1439,13 @@ def main():
                                 S_POINT.play()
                             
                             pts *= score_lvl
-                            if now < zebra_until: # La zebra mode è attiva dopo aver passato un tubo zebra
+                            if now < zebra_until and not skip_zebra_mult:
                                 pts *= ZEBRA_POINTS_MULT
                             
                             score += int(pts)
                             if score > best:
                                 best = score
-                            break # Assegna punti solo per un tubo alla volta
+                            break
 
             # Gestione punti vita extra
             if score >= next_life_threshold:
@@ -1419,12 +1526,14 @@ def main():
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
             if now < ice_until:
-                draw_ice_active(WIN, ice_until - now)            
+                draw_ice_active(WIN, ice_until - now)
+            if now < debt_until:
+                draw_debt_indicator(WIN, bird.x, bird.y, bird.size)
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
                 draw_debug_info(WIN, base_speed, speed_lvl,
-                                now < zebra_until, now < ice_until,
-                                master_speed, level_timer, current_gap)
+                                now < zebra_until, now < ice_until, now < debt_until,
+                                master_speed, level_timer, current_gap, debt_mult)
 
         if paused:
             draw_pause_overlay(WIN)

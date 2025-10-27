@@ -140,6 +140,13 @@ Score: 42      ❤ ❤ ❤      Level 1
 - Grants instant **4 pts** × level multiplier
 - Appears randomly every 60-80 seconds
 
+**🪨​ DEBT** (white/blue pipe)
+- Grants instant **5 pts** × level multiplier  
+- Activates **TECH-DEBT mode** for 8 seconds:
+  - Gravity malus **20% heavier**
+  - A anchor appears over the bird
+- Appears randomly every 45-70 seconds
+
 **🪙 GOLDEN** (gold pipe)  
 - +1 Life
 - Appears randomly every 180-210 seconds
@@ -209,7 +216,7 @@ When you reach the **4-minute mark**:
 - 🪙​ Golden Pipe ( https://freesound.org/people/Eschwabe3/sounds/460132/ )
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
 - 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
-
+- 🪨 Tech Debt Pipe ( https://freesound.org/people/joseegn/sounds/752434/ )
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
