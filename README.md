@@ -74,10 +74,7 @@ Before each game, you'll see a **customization menu** where you can choose:
 - Toggles real-time overlay showing:
   - **Game Time** - elapsed time in mm:ss format
   - **Base Speed** - starting scroll speed
-  - **Level Mult** - current level multiplier (1.0×, 1.5×, 2.0×)
-  - **Zebra Mult** - speed boost when active (1.5×) for 8 second
-  - **Golden Pipe** - +1 Life
-  - **Ice Pipe** - %50 speed for 8 second  
+  - **Special Pipes** - Info extra for special pipes 
   - **SPEED** - final combined speed (highlighted in green)
   - **Pipe Gap** - current vertical spacing between pipes
 
@@ -138,6 +135,17 @@ Score: 42      ❤ ❤ ❤      Level 1
   - Everything scrolls **0.5× slower**
   - A countdown timer appears at the top
 - Appears randomly every 60-75 seconds
+
+**🗿 LEGACY** (dark brown pipe)  
+- Grants instant **4 pts** × level multiplier
+- Appears randomly every 60-80 seconds
+
+**🪨​ DEBT** (white/blue pipe)
+- Grants instant **5 pts** × level multiplier  
+- Activates **TECH-DEBT mode** for 8 seconds:
+  - Gravity malus **20% heavier**
+  - A anchor appears over the bird
+- Appears randomly every 45-70 seconds
 
 **🪙 GOLDEN** (gold pipe)  
 - +1 Life
@@ -207,7 +215,8 @@ When you reach the **4-minute mark**:
 - 💔 Life lost ( https://freesound.org/people/GameAudio/sounds/220174/ )
 - 🪙​ Golden Pipe ( https://freesound.org/people/Eschwabe3/sounds/460132/ )
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
-
+- 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
+- 🪨 Tech Debt Pipe ( https://freesound.org/people/joseegn/sounds/752434/ )
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
