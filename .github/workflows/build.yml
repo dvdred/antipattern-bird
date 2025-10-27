@@ -1,11 +1,12 @@
 name: Build and Release
 permissions:
-  contents: write       # consente la scrittura di tag e release
+  contents: write
+
 on:
   push:
     tags:
-      - 'v*'          # triggers only on tags like v1.0.0
-  workflow_dispatch:  # manual run from Actions tab
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build-windows:
@@ -29,7 +30,12 @@ jobs:
           --add-data "lifeup.wav;."
           --add-data "point.wav;."
           --add-data "rainbow.wav;."
+          --add-data "golden.wav;."
+          --add-data "ice.wav;."
+          --add-data "legacy.wav;."
+          --add-data "debt.wav;."
           --add-data "DejaVuSansMono.ttf;."
+          --icon "icon32.png"
           --name antipattern-bird app.py
 
       - uses: actions/upload-artifact@v4
@@ -43,7 +49,6 @@ jobs:
           files: dist/antipattern-bird.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -66,6 +71,10 @@ jobs:
           --add-data "lifeup.wav:."
           --add-data "point.wav:."
           --add-data "rainbow.wav:."
+          --add-data "golden.wav:."
+          --add-data "ice.wav:."
+          --add-data "legacy.wav:."
+          --add-data "debt.wav:."
           --add-data "DejaVuSansMono.ttf:."
           --name antipattern-bird app.py
 
