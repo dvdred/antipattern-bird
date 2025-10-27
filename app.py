@@ -31,6 +31,7 @@ lifeup_sound   = get_resource_path('lifeup.wav')
 lifedown_sound = get_resource_path('lifedown.wav')
 golden_sound   = get_resource_path('golden.wav')
 ice_sound   = get_resource_path('ice.wav')
+legacy_sound   = get_resource_path('legacy.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
 
 ICON = pygame.image.load(icon_path)
@@ -43,8 +44,9 @@ S_LIFEUP   = pygame.mixer.Sound(lifeup_sound)
 S_LIFEDOWN = pygame.mixer.Sound(lifedown_sound)
 S_GOLDEN = pygame.mixer.Sound(golden_sound)
 S_ICE = pygame.mixer.Sound(ice_sound)
+S_LEGACY = pygame.mixer.Sound(legacy_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY):
     if snd:
         snd.set_volume(0.5)
 
@@ -108,12 +110,18 @@ GOLDEN_MAX_MS = 210_000          # 3,5 minuti
 ICE_MIN_MS = 30_000          # 0,5 minuti (medio)
 ICE_MAX_MS = 60_000          # 1 minuti
 
+# ---------- LEGACY CODE PIPE ----------
+LEGACY_MIN_MS = 65_000       # 65 secondi
+LEGACY_MAX_MS = 80_000       # 80 secondi
+LEGACY_POINTS = 4
+LEGACY_GAP_REDUCTION = 25
 
+# ---------- LEVEL TIMEs ----------
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-#WIN_TIME = 240_000   # 4 minuti
-WIN_TIME = 15_000   # DEBUG
+WIN_TIME = 240_000   # 4 minuti
+#WIN_TIME = 15_000   # DEBUG
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
@@ -452,6 +460,58 @@ class IcePipe(Pipe):
         rect.centery = self.height + PIPE_GAP + bot_h // 2
         surf.blit(txt, rect)
 
+class LegacyPipe(Pipe):
+    """Pipe marrone scuro con gap ridotto, dà +4 punti (risk/reward)"""
+    def __init__(self, x, base_gap=180):
+        # Gap ridotto di LEGACY_GAP_REDUCTION pixel
+        reduced_gap = base_gap - LEGACY_GAP_REDUCTION
+        super().__init__(x, text="Legacy_Code", gap=reduced_gap)
+        self.color = (101, 67, 33)  # Marrone scuro
+        self.is_legacy = True
+        self.passed = False
+
+    def draw(self, surf, alpha=255):
+        # ---- bordo nero 2 px (stile vintage) ----
+        pygame.draw.rect(surf, (0,0,0), (self.x-2, -2, PIPE_W+4, self.height+4), 2)
+        pygame.draw.rect(surf, (0,0,0), (self.x-2, self.height+self.gap-2, PIPE_W+4,
+                                        HEIGHT-self.height-self.gap-50+4), 2)
+        
+        # Riempimento marrone scuro
+        top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        top.fill((*self.color, alpha))
+        surf.blit(top, (self.x, 0))
+
+        bot_h = HEIGHT - self.height - self.gap - 50
+        bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        bottom.fill((*self.color, alpha))
+        surf.blit(bottom, (self.x, self.height + self.gap))
+
+        # Testo "Legacy_Code" spezzato in righe da 2 caratteri
+        font_small = pygame.font.SysFont("ubuntumono", 20) or pygame.font.SysFont("Arial", 20) or pygame.font.SysFont(None, 20)
+        lines = ["LE", "GA", "CY", "__", "CO", "DE"]
+        total_h = len(lines) * 22
+        
+        # Disegna nella parte superiore
+        start_y = max(5, (self.height - total_h) // 2)
+        for i, line in enumerate(lines):
+            y_line = start_y + i * 22
+            if y_line + 22 > self.height - 5:
+                continue
+            txt = font_small.render(line, True, (255, 220, 180))  # Testo color crema
+            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
+            if txt.get_width() <= PIPE_W - 4:
+                surf.blit(txt, (x_txt, y_line))
+
+        # Disegna nella parte inferiore
+        start_y_bot = max(5, (bot_h - total_h) // 2)
+        for i, line in enumerate(lines):
+            y_line = start_y_bot + i * 22
+            if y_line + 22 > bot_h - 5:
+                continue
+            txt = font_small.render(line, True, (255, 220, 180))
+            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
+            if txt.get_width() <= PIPE_W - 4:
+                surf.blit(txt, (x_txt, self.height + self.gap + y_line))
 # ==============================================================
 #                      FUNZIONI UI
 # ==============================================================
@@ -812,6 +872,7 @@ def main():
     rainbow_next   = pygame.time.get_ticks() + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
     golden_next    = pygame.time.get_ticks() + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
     ice_next       = pygame.time.get_ticks() + random.randint(ICE_MIN_MS, ICE_MAX_MS)
+    legacy_next    = pygame.time.get_ticks() + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -972,6 +1033,7 @@ def main():
                             bg_color   = random.choice(LIGHT_COLORS)
                             land_color = random.choice(LAND_COLORS)
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                            legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
@@ -1076,6 +1138,7 @@ def main():
                             bg_color   = random.choice(LIGHT_COLORS)
                             land_color = random.choice(LAND_COLORS)
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                            legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
@@ -1181,6 +1244,9 @@ def main():
                 elif now >= ice_next and ice_until <= now:
                     pipes.append(IcePipe(WIDTH))
                     ice_next = now + random.randint(ICE_MIN_MS, ICE_MAX_MS)
+                elif now >= legacy_next:
+                    pipes.append(LegacyPipe(WIDTH, base_gap=current_gap))
+                    legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                 elif now >= golden_next:
                     pipes.append(GoldenPipe(WIDTH))
                     golden_next = now + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)
@@ -1247,9 +1313,13 @@ def main():
                                     lives += 1
                                 S_GOLDEN.play()
                                 flash_until = now + FLASH_MS
-                            elif getattr(p, 'is_ice', False):           # NEW
-                                ice_until = now + 8_000                 # 8 s
+                            elif getattr(p, 'is_ice', False):
+                                ice_until = now + 8_000
                                 S_ICE.play()
+                                flash_until = now + FLASH_MS
+                            elif getattr(p, 'is_legacy', False):
+                                pts = LEGACY_POINTS
+                                S_LEGACY.play()
                                 flash_until = now + FLASH_MS                            
                             else:
                                 S_POINT.play()

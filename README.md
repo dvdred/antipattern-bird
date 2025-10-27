@@ -207,6 +207,7 @@ When you reach the **4-minute mark**:
 - 💔 Life lost ( https://freesound.org/people/GameAudio/sounds/220174/ )
 - 🪙​ Golden Pipe ( https://freesound.org/people/Eschwabe3/sounds/460132/ )
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
+- 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
 
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
