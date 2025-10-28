@@ -18,9 +18,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - run: pip install pyinstaller
+      - run: pip install pyinstaller pillow
 
       - run: pip install -r requirements.txt
+
+      - run: python -c "from PIL import Image; img = Image.open('icon32.png'); img.save('icon.ico', format='ICO')"
 
       - run: >
           pyinstaller --onefile --noconsole
@@ -35,7 +37,7 @@ jobs:
           --add-data "legacy.wav;."
           --add-data "debt.wav;."
           --add-data "DejaVuSansMono.ttf;."
-          --icon "icon32.png"
+          --icon "icon.ico"
           --name antipattern-bird app.py
 
       - uses: actions/upload-artifact@v4
