@@ -1,7 +1,26 @@
-import unittest, pathlib, os, pygame
+import unittest, pathlib, os, builtins, sys
 from pathlib import Path
+#from app import *
+
+# Verifica se stiamo eseguendo i test
+is_testing = 'unittest' in sys.modules or 'pytest' in sys.modules
+
+# Set dummy drivers before importing pygame
+#os.environ['SDL_VIDEODRIVER'] = 'dummy'
+os.environ['SDL_AUDIODRIVER'] = 'dummy'
+
+# Now import pygame - it will use dummy drivers
+import pygame
+
+# Your existing test imports and code
 from unittest.mock import Mock
-from app import *
+
+# Import your app after setting up the environment
+try:
+    from app import *
+except ImportError as e:
+    print(f"Import error: {e}")
+    sys.exit(1)
 
 class TestGameFilesExist(unittest.TestCase):
     def test_required_resource_files_exist(self):
