@@ -30,49 +30,17 @@ rainbow_sound  = get_resource_path('rainbow.wav')
 lifeup_sound   = get_resource_path('lifeup.wav')
 lifedown_sound = get_resource_path('lifedown.wav')
 golden_sound   = get_resource_path('golden.wav')
-ice_sound   = get_resource_path('ice.wav')
+ice_sound      = get_resource_path('ice.wav')
 legacy_sound   = get_resource_path('legacy.wav')
-debt_sound = get_resource_path('debt.wav')
-mud_sound = get_resource_path('debt.wav')
+debt_sound     = get_resource_path('debt.wav')
+mud_sound      = get_resource_path('debt.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
-font_emoji_ext     = get_resource_path('NotoColorEmoji.ttf')
+font_emoji_ext = get_resource_path('NotoColorEmoji.ttf')
 
 # ---------- config ----------
 EMOJI_SCALE = 0.25          # 1.0 = nativo, 0.25 → 1/4, 1.5 → +50 %
 EMOJI_BASE_SIZE = 128       # usato solo per generare il bitmap
 # ----------------------------
-
-def emoji_font(size, scale=None):
-    """
-    Ritorna un oggetto "Font" compatto con pygame che:
-      - carica NotoColorEmoji
-      - renderizza sempre a EMOJI_BASE_SIZE (128 px nativi)
-      - restituisce la superficie ridimensionata a `size` pixel
-    Uso esattamente come un font normale:
-        font = emoji_font(24)           # 24 px finali
-        surf = font.render("💩", True, col)
-    """
-    if scale is None:                   # calcola automaticamente
-        scale = size / EMOJI_BASE_SIZE
-    loader = pygame.font.Font(font_emoji_ext, EMOJI_BASE_SIZE)
-
-    class EmojiFont:
-        __slots__ = ("_ldr", "_sc")
-        def __init__(self, loader, scale):
-            self._ldr, self._sc = loader, scale
-        def render(self, text, antialias, color, background=None):
-            big = self._ldr.render(text, antialias, color, background)
-            if self._sc == 1.0:
-                return big
-            new_sz = (int(big.get_width()  * self._sc),
-                      int(big.get_height() * self._sc))
-            return pygame.transform.smoothscale(big, new_sz)
-        # metodi utili, se vuoi: size, metrics, ecc.
-        @property
-        def size(self):                 # "virtual" size
-            return int(EMOJI_BASE_SIZE * self._sc)
-
-    return EmojiFont(loader, scale)
 
 ICON = pygame.image.load(icon_path)
 pygame.display.set_icon(ICON)
@@ -166,8 +134,8 @@ DEBT_DURATION_MS = 8_000     # 8 secondi
 DEBT_GRAVITY_MULT = 1.2      # +20% gravità
 
 # ---------- BIG BALL OF MUD PIPE (mini-boss) ----------
-MUD_MIN_MS        = 220_000          # 3,5 min
-MUD_MAX_MS        = 230_000          # fissa (può rimanere random se vuoi)
+MUD_MIN_MS        = 110_000          # 3,5 min
+MUD_MAX_MS        = 115_000          # fissa (può rimanere random se vuoi)
 MUD_POINTS        = 15
 MUD_PIPE_W        = 110              # larghezza pipe
 MUD_GAP           = 110               # altezza singolo gap
@@ -202,6 +170,38 @@ TEXT_LIST = [
 "Reinventing_the_wheel", "Reinventing_the_Square_Wheel", "Fencepost",
 "Software_Bloat", "Spaghetti_Code", "Hard_Code", "Soft_Code", "Dead_End"
 ]
+
+def emoji_font(size, scale=None):
+    """
+    Ritorna un oggetto "Font" compatto con pygame che:
+      - carica NotoColorEmoji
+      - renderizza sempre a EMOJI_BASE_SIZE (128 px nativi)
+      - restituisce la superficie ridimensionata a `size` pixel
+    Uso esattamente come un font normale:
+        font = emoji_font(24)           # 24 px finali
+        surf = font.render("💩", True, col)
+    """
+    if scale is None:                   # calcola automaticamente
+        scale = size / EMOJI_BASE_SIZE
+    loader = pygame.font.Font(font_emoji_ext, EMOJI_BASE_SIZE)
+
+    class EmojiFont:
+        __slots__ = ("_ldr", "_sc")
+        def __init__(self, loader, scale):
+            self._ldr, self._sc = loader, scale
+        def render(self, text, antialias, color, background=None):
+            big = self._ldr.render(text, antialias, color, background)
+            if self._sc == 1.0:
+                return big
+            new_sz = (int(big.get_width()  * self._sc),
+                      int(big.get_height() * self._sc))
+            return pygame.transform.smoothscale(big, new_sz)
+        # metodi utili, se vuoi: size, metrics, ecc.
+        @property
+        def size(self):                 # "virtual" size
+            return int(EMOJI_BASE_SIZE * self._sc)
+
+    return EmojiFont(loader, scale)
 
 def get_pipe_spawn_time(speed, distance):
     """Calcola millisecondi necessari affinché una pipe percorra 'distance' pixel alla velocità 'speed'"""
@@ -596,20 +596,9 @@ class TechnicalDebtPipe(Pipe):
         surf.blit(bottom, (self.x, self.height + self.gap))
 
         # Testo "Technical_Debt" spezzato
-        font_small = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
+        font_small = pygame.font.SysFont("ubuntumono", 20) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
         lines = ["TE", "CH", "NI", "CA", "L_", "DE", "BT"]
         total_h = len(lines) * 20
-        
-        # Disegna nella parte superiore
-        start_y = max(5, (self.height - total_h) // 2)
-        for i, line in enumerate(lines):
-            y_line = start_y + i * 20
-            if y_line + 20 > self.height - 5:
-                continue
-            txt = font_small.render(line, True, (200, 200, 200))  # Grigio chiaro
-            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
-            if txt.get_width() <= PIPE_W - 4:
-                surf.blit(txt, (x_txt, y_line))
 
         # Disegna nella parte inferiore
         start_y_bot = max(5, (bot_h - total_h) // 2)
@@ -623,19 +612,14 @@ class TechnicalDebtPipe(Pipe):
                 surf.blit(txt, (x_txt, self.height + self.gap + y_line))
         
         # Icona ⚓ al centro (simbolo di peso/debito)
-        font_big = pygame.font.Font(font_emoji, 36) or pygame.font.SysFont(None, 36)
+        font_big = emoji_font(36)
         icon = font_big.render("⚓", True, (255, 200, 0))  # Oro scuro
         
         # Top center
         rect = icon.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
-        surf.blit(icon, rect)
-        
-        # Bottom center
-        rect.centery = self.height + self.gap + bot_h // 2
-        surf.blit(icon, rect)
+        surf.blit(icon, rect)        
 
 class BigBallOfMudPipe(Pipe):
-    """Pipe-boss enorme con DUE gap stretti (sopra/sotto), marrone/giallo striped"""
     def __init__(self, x):
         super().__init__(x, text="", gap=MUD_GAP)
         self.colors = MUD_COLORS
@@ -645,45 +629,64 @@ class BigBallOfMudPipe(Pipe):
 
     # override larghezza
     def draw(self, surf, alpha=255):
-        strip_w = MUD_PIPE_W // 2
-        # ------ rettangoli pieni (bande colorate) ------
-        for i, col in enumerate(self.colors):
-            rect = pygame.Surface((strip_w, self.height), pygame.SRCALPHA)
-            rect.fill((*col, alpha))
-            surf.blit(rect, (self.x + i * strip_w, 0))
-            bot_h = HEIGHT - self.height - MUD_GAP - 50
-            rect2 = pygame.Surface((strip_w, bot_h), pygame.SRCALPHA)
-            rect2.fill((*col, alpha))
-            surf.blit(rect2, (self.x + i * strip_w, self.height + MUD_GAP))
+        """Bande orizzontali 80 px, alternanza marrone-giallo"""
+        bh = 80  # altezza singola banda
+        bot_h = HEIGHT - self.height - MUD_GAP - 50
+
+        # ---------- parte SUPERIORE ----------
+        y = 0
+        while y < self.height:
+            band_h = min(bh, self.height - y)
+            for i, col in enumerate(self.colors):
+                yy = y + i * bh
+                if yy >= self.height:
+                    break
+                rect = pygame.Surface((MUD_PIPE_W, min(bh, self.height - yy)), pygame.SRCALPHA)
+                rect.fill((*col, alpha))
+                surf.blit(rect, (self.x, yy))
+
+            y += len(self.colors) * bh  # salta un "set" completo
+
+        # ---------- parte INFERIORE ----------
+        y2 = self.height + MUD_GAP
+        while y2 < self.height + MUD_GAP + bot_h:
+            for i, col in enumerate(self.colors):
+                yy = y2 + i * bh
+                if yy >= self.height + MUD_GAP + bot_h:
+                    break
+                rect = pygame.Surface((MUD_PIPE_W, min(bh, (self.height + MUD_GAP + bot_h) - yy)), pygame.SRCALPHA)
+                rect.fill((*col, alpha))
+                surf.blit(rect, (self.x, yy))
+
+            y2 += len(self.colors) * bh
 
         # ------ bordo nero esterno ------
         pygame.draw.rect(surf, (0, 0, 0),
-                         (self.x-2, -2, MUD_PIPE_W+4, self.height+4), 2)
+                        (self.x-2, -2, MUD_PIPE_W+4, self.height+4), 2)
         pygame.draw.rect(surf, (0, 0, 0),
-                         (self.x-2, self.height+MUD_GAP-2, MUD_PIPE_W+4,
-                          HEIGHT-self.height-MUD_GAP-50+4), 2)
+                        (self.x-2, self.height+MUD_GAP-2, MUD_PIPE_W+4,
+                        HEIGHT-self.height-MUD_GAP-50+4), 2)
 
         # ------ emoji 💀 al centro di ogni lato ------
-        font_big = emoji_font(32)
-        icon = font_big.render("💩💀​", True, (0, 0, 0))
-
+        font_big = emoji_font(36)
+        icon = font_big.render("💩", True, (0, 0, 0))
         # top
         r1 = icon.get_rect(center=(self.x + MUD_PIPE_W//2, self.height//2))
         surf.blit(icon, r1)
-        # bottom
-        r2 = icon.get_rect(center=(self.x + MUD_PIPE_W//2,
-                                   self.height + MUD_GAP + bot_h//2))
-        surf.blit(icon, r2)
 
-    # override collide: la collisione avviene se tocchi IL BLOCCO (non i gap)
-    def collide(self, bird):
-        b = bird.get_rect()
-        # blocco superiore
-        top = pygame.Rect(self.x, 0, MUD_PIPE_W, self.height)
-        # inter-gap (solido)
-        mid = pygame.Rect(self.x, self.height + MUD_GAP,
-                          MUD_PIPE_W, HEIGHT - self.height - MUD_GAP - 50)
-        return b.colliderect(top) or b.colliderect(mid)
+        font_txt = pygame.font.SysFont("ubuntumono", 28) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
+        lines = ["BA", "LL", "__", "OF", "__", "MU", "D"]  # <2 caratteri per riga
+        line_h = 24  # altezza singola riga
+        start_y_inf = self.height + MUD_GAP + bot_h // 3  # 1/3 del rettangolo inferiore
+
+        # disegna INFERIORE
+        for i, line in enumerate(lines):
+            yy = start_y_inf + i * line_h
+            if yy + line_h > self.height + MUD_GAP + bot_h - 4:
+                continue
+            txt_surface = font_txt.render(line, True, (255, 0, 0))
+            surf.blit(txt_surface,
+                      (self.x + (MUD_PIPE_W - txt_surface.get_width()) // 2, yy))
 
 # ==============================================================
 #                      FUNZIONI UI
