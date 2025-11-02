@@ -12,17 +12,51 @@ class MockMixer:
         # Non fare nulla, simula l'inizializzazione
         pass
     
-    def quit(self):
-        pass
 
-# Mock pygame per evitare errori di audio
+
+# Mock per pygame e tutti i suoi moduli
 class MockPygame:
     def __init__(self):
-        self.mixer = MockMixer()
-        self.display = type('MockDisplay', (), {})()
-        self.event = type('MockEvent', (), {})()
-        self.time = type('MockTime', (), {})()
-        self.key = type('MockKey', (), {})()
+        self.mixer = Mock()
+        self.mixer.init = Mock()
+        self.mixer.quit = Mock()
+        self.Rect = Mock()
+        self.Surface = Mock()
+        self.freetype = Mock()  # Aggiungi freetype
+        self.freetype.Font = Mock()
+
+    def init(self):
+        return True
+
+    def quit(self):
+        pass
+# Mock del modulo pygame
+mock_pygame = MockPygame()
+
+# Sostituisci pygame con il mock prima di importare app.py
+sys.modules['pygame'] = mock_pygame
+
+# Importa app.py dopo aver mockato pygame
+try:
+    from app import *
+except ImportError as e:
+    print(f"Import error: {e}")
+    sys.exit(1)
+
+# Mock per pygame.mixer.init per evitare errori di audio
+def mock_mixer_init(*args, **kwargs):
+    return None
+
+def mock_mixer_quit(*args, **kwargs):
+    return None
+
+# Mock per pygame.Rect
+def mock_rect(*args, **kwargs):
+    return Mock()
+
+# Mock per pygame.Surface
+def mock_surface(*args, **kwargs):
+    return Mock()
 
 class TestGameFilesExist(unittest.TestCase):
     def test_required_resource_files_exist(self):
