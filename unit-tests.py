@@ -1,7 +1,28 @@
-import unittest, pathlib, os, pygame
+import unittest, pathlib, os, pygame, builtins
 from pathlib import Path
 from unittest.mock import Mock
 from app import *
+
+# Verifica se stiamo eseguendo i test
+is_testing = 'unittest' in sys.modules or 'pytest' in sys.modules
+
+# Mock pygame.mixer per evitare errori di audio in ambiente headless
+class MockMixer:
+    def init(self, frequency=22050, size=-16, channels=2, buffer=512):
+        # Non fare nulla, simula l'inizializzazione
+        pass
+    
+    def quit(self):
+        pass
+
+# Mock pygame per evitare errori di audio
+class MockPygame:
+    def __init__(self):
+        self.mixer = MockMixer()
+        self.display = type('MockDisplay', (), {})()
+        self.event = type('MockEvent', (), {})()
+        self.time = type('MockTime', (), {})()
+        self.key = type('MockKey', (), {})()
 
 class TestGameFilesExist(unittest.TestCase):
     def test_required_resource_files_exist(self):
