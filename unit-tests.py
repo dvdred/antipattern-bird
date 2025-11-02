@@ -1,62 +1,26 @@
-import unittest, pathlib, os, pygame, builtins
+import unittest, pathlib, os, builtins, sys
 from pathlib import Path
-from unittest.mock import Mock
-from app import *
+#from app import *
 
 # Verifica se stiamo eseguendo i test
 is_testing = 'unittest' in sys.modules or 'pytest' in sys.modules
 
-# Mock pygame.mixer per evitare errori di audio in ambiente headless
-class MockMixer:
-    def init(self, frequency=22050, size=-16, channels=2, buffer=512):
-        # Non fare nulla, simula l'inizializzazione
-        pass
-    
+# Set dummy drivers before importing pygame
+#os.environ['SDL_VIDEODRIVER'] = 'dummy'
+os.environ['SDL_AUDIODRIVER'] = 'dummy'
 
+# Now import pygame - it will use dummy drivers
+import pygame
 
-# Mock per pygame e tutti i suoi moduli
-class MockPygame:
-    def __init__(self):
-        self.mixer = Mock()
-        self.mixer.init = Mock()
-        self.mixer.quit = Mock()
-        self.Rect = Mock()
-        self.Surface = Mock()
-        self.freetype = Mock()  # Aggiungi freetype
-        self.freetype.Font = Mock()
+# Your existing test imports and code
+from unittest.mock import Mock
 
-    def init(self):
-        return True
-
-    def quit(self):
-        pass
-# Mock del modulo pygame
-mock_pygame = MockPygame()
-
-# Sostituisci pygame con il mock prima di importare app.py
-sys.modules['pygame'] = mock_pygame
-
-# Importa app.py dopo aver mockato pygame
+# Import your app after setting up the environment
 try:
     from app import *
 except ImportError as e:
     print(f"Import error: {e}")
     sys.exit(1)
-
-# Mock per pygame.mixer.init per evitare errori di audio
-def mock_mixer_init(*args, **kwargs):
-    return None
-
-def mock_mixer_quit(*args, **kwargs):
-    return None
-
-# Mock per pygame.Rect
-def mock_rect(*args, **kwargs):
-    return Mock()
-
-# Mock per pygame.Surface
-def mock_surface(*args, **kwargs):
-    return Mock()
 
 class TestGameFilesExist(unittest.TestCase):
     def test_required_resource_files_exist(self):
