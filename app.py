@@ -33,7 +33,46 @@ golden_sound   = get_resource_path('golden.wav')
 ice_sound   = get_resource_path('ice.wav')
 legacy_sound   = get_resource_path('legacy.wav')
 debt_sound = get_resource_path('debt.wav')
+mud_sound = get_resource_path('debt.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
+font_emoji_ext     = get_resource_path('NotoColorEmoji.ttf')
+
+# ---------- config ----------
+EMOJI_SCALE = 0.25          # 1.0 = nativo, 0.25 → 1/4, 1.5 → +50 %
+EMOJI_BASE_SIZE = 128       # usato solo per generare il bitmap
+# ----------------------------
+
+def emoji_font(size, scale=None):
+    """
+    Ritorna un oggetto "Font" compatto con pygame che:
+      - carica NotoColorEmoji
+      - renderizza sempre a EMOJI_BASE_SIZE (128 px nativi)
+      - restituisce la superficie ridimensionata a `size` pixel
+    Uso esattamente come un font normale:
+        font = emoji_font(24)           # 24 px finali
+        surf = font.render("💩", True, col)
+    """
+    if scale is None:                   # calcola automaticamente
+        scale = size / EMOJI_BASE_SIZE
+    loader = pygame.font.Font(font_emoji_ext, EMOJI_BASE_SIZE)
+
+    class EmojiFont:
+        __slots__ = ("_ldr", "_sc")
+        def __init__(self, loader, scale):
+            self._ldr, self._sc = loader, scale
+        def render(self, text, antialias, color, background=None):
+            big = self._ldr.render(text, antialias, color, background)
+            if self._sc == 1.0:
+                return big
+            new_sz = (int(big.get_width()  * self._sc),
+                      int(big.get_height() * self._sc))
+            return pygame.transform.smoothscale(big, new_sz)
+        # metodi utili, se vuoi: size, metrics, ecc.
+        @property
+        def size(self):                 # "virtual" size
+            return int(EMOJI_BASE_SIZE * self._sc)
+
+    return EmojiFont(loader, scale)
 
 ICON = pygame.image.load(icon_path)
 pygame.display.set_icon(ICON)
@@ -47,8 +86,9 @@ S_GOLDEN = pygame.mixer.Sound(golden_sound)
 S_ICE = pygame.mixer.Sound(ice_sound)
 S_LEGACY = pygame.mixer.Sound(legacy_sound)
 S_DEBT = pygame.mixer.Sound(debt_sound)
+S_MUD = pygame.mixer.Sound(mud_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_MUD):
     if snd:
         snd.set_volume(0.5)
 
@@ -124,6 +164,15 @@ DEBT_MAX_MS = 70_000         # 70 secondi
 DEBT_POINTS = 5              # Moltiplicato per livello
 DEBT_DURATION_MS = 8_000     # 8 secondi
 DEBT_GRAVITY_MULT = 1.2      # +20% gravità
+
+# ---------- BIG BALL OF MUD PIPE (mini-boss) ----------
+MUD_MIN_MS        = 220_000          # 3,5 min
+MUD_MAX_MS        = 230_000          # fissa (può rimanere random se vuoi)
+MUD_POINTS        = 15
+MUD_PIPE_W        = 110              # larghezza pipe
+MUD_GAP           = 110               # altezza singolo gap
+MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
+                     (255, 215, 0)]   # giallo    (come Golden)
 
 # ---------- LEVEL TIMEs ----------
 LVL2_TIME = 90_000
@@ -585,6 +634,57 @@ class TechnicalDebtPipe(Pipe):
         rect.centery = self.height + self.gap + bot_h // 2
         surf.blit(icon, rect)
 
+class BigBallOfMudPipe(Pipe):
+    """Pipe-boss enorme con DUE gap stretti (sopra/sotto), marrone/giallo striped"""
+    def __init__(self, x):
+        super().__init__(x, text="", gap=MUD_GAP)
+        self.colors = MUD_COLORS
+        self.is_mud = True
+        self.passed = False
+        self.color = self.colors[0]   # serve solo per evitare errori nei print
+
+    # override larghezza
+    def draw(self, surf, alpha=255):
+        strip_w = MUD_PIPE_W // 2
+        # ------ rettangoli pieni (bande colorate) ------
+        for i, col in enumerate(self.colors):
+            rect = pygame.Surface((strip_w, self.height), pygame.SRCALPHA)
+            rect.fill((*col, alpha))
+            surf.blit(rect, (self.x + i * strip_w, 0))
+            bot_h = HEIGHT - self.height - MUD_GAP - 50
+            rect2 = pygame.Surface((strip_w, bot_h), pygame.SRCALPHA)
+            rect2.fill((*col, alpha))
+            surf.blit(rect2, (self.x + i * strip_w, self.height + MUD_GAP))
+
+        # ------ bordo nero esterno ------
+        pygame.draw.rect(surf, (0, 0, 0),
+                         (self.x-2, -2, MUD_PIPE_W+4, self.height+4), 2)
+        pygame.draw.rect(surf, (0, 0, 0),
+                         (self.x-2, self.height+MUD_GAP-2, MUD_PIPE_W+4,
+                          HEIGHT-self.height-MUD_GAP-50+4), 2)
+
+        # ------ emoji 💀 al centro di ogni lato ------
+        font_big = emoji_font(32)
+        icon = font_big.render("💩💀​", True, (0, 0, 0))
+
+        # top
+        r1 = icon.get_rect(center=(self.x + MUD_PIPE_W//2, self.height//2))
+        surf.blit(icon, r1)
+        # bottom
+        r2 = icon.get_rect(center=(self.x + MUD_PIPE_W//2,
+                                   self.height + MUD_GAP + bot_h//2))
+        surf.blit(icon, r2)
+
+    # override collide: la collisione avviene se tocchi IL BLOCCO (non i gap)
+    def collide(self, bird):
+        b = bird.get_rect()
+        # blocco superiore
+        top = pygame.Rect(self.x, 0, MUD_PIPE_W, self.height)
+        # inter-gap (solido)
+        mid = pygame.Rect(self.x, self.height + MUD_GAP,
+                          MUD_PIPE_W, HEIGHT - self.height - MUD_GAP - 50)
+        return b.colliderect(top) or b.colliderect(mid)
+
 # ==============================================================
 #                      FUNZIONI UI
 # ==============================================================
@@ -963,6 +1063,7 @@ def main():
     ice_next       = pygame.time.get_ticks() + random.randint(ICE_MIN_MS, ICE_MAX_MS)
     legacy_next    = pygame.time.get_ticks() + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
     debt_next      = pygame.time.get_ticks() + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+    mud_next       = pygame.time.get_ticks() + random.randint(MUD_MIN_MS, MUD_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -976,6 +1077,9 @@ def main():
 
 # ----- DEBT TIMER -----
     debt_until     = 0
+
+# ----- BOSS TIMER -----
+    ice_until      = 0
 
 # ----- LIVELLI -----
     level_timer      = 0
@@ -1128,6 +1232,7 @@ def main():
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                            mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
@@ -1234,6 +1339,7 @@ def main():
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                            mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
@@ -1359,6 +1465,9 @@ def main():
                 elif now >= rainbow_next:
                     pipes.append(RainbowPipe(WIDTH, gap=current_gap))
                     rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                elif now >= mud_next:
+                    pipes.append(BigBallOfMudPipe(WIDTH))
+                    mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                 else:
                     pipes.append(Pipe(WIDTH, gap=current_gap))
 
@@ -1431,6 +1540,10 @@ def main():
                                 S_DEBT.play()
                                 flash_until = now + FLASH_MS
                                 skip_zebra_mult = True  # Debt NON beneficia di zebra mode
+                            elif getattr(p, 'is_mud', False):
+                                pts = MUD_POINTS
+                                S_MUD.play()
+                                flash_until = now + FLASH_MS
                             elif getattr(p, 'is_legacy', False):
                                 pts = LEGACY_POINTS
                                 S_LEGACY.play()
