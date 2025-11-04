@@ -41,16 +41,8 @@ jobs:
       - run: >
           pyinstaller --onefile --noconsole
           --add-data "icon32.png;."
-          --add-data "jump.wav;."
-          --add-data "lifedown.wav;."
-          --add-data "lifeup.wav;."
-          --add-data "point.wav;."
-          --add-data "rainbow.wav;."
-          --add-data "golden.wav;."
-          --add-data "ice.wav;."
-          --add-data "legacy.wav;."
-          --add-data "debt.wav;."
-          --add-data "DejaVuSansMono.ttf;."
+          --add-data "*.wav;."
+          --add-data "*ttf;."
           --icon "icon.ico"
           --name antipattern-bird app.py
       - uses: actions/upload-artifact@v4
@@ -76,16 +68,8 @@ jobs:
       - run: >
           pyinstaller --onefile
           --add-data "icon32.png:."
-          --add-data "jump.wav:."
-          --add-data "lifedown.wav:."
-          --add-data "lifeup.wav:."
-          --add-data "point.wav:."
-          --add-data "rainbow.wav:."
-          --add-data "golden.wav:."
-          --add-data "ice.wav:."
-          --add-data "legacy.wav:."
-          --add-data "debt.wav:."
-          --add-data "DejaVuSansMono.ttf:."
+          --add-data "*.wav:."
+          --add-data "*.ttf:."
           --name antipattern-bird app.py
       - uses: actions/upload-artifact@v4
         with:
