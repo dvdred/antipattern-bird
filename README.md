@@ -217,6 +217,8 @@ When you reach the **4-minute mark**:
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
 - 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
 - 🪨 Tech Debt Pipe ( https://freesound.org/people/joseegn/sounds/752434/ )
+- 💩 BBall of Mud Pipe ( https://freesound.org/people/Breviceps/sounds/445117/ )
+- 🏆​ Victory! ( https://freesound.org/people/Victor_Natas/sounds/741118/ )
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features

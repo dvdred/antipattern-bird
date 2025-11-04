@@ -33,7 +33,8 @@ golden_sound   = get_resource_path('golden.wav')
 ice_sound      = get_resource_path('ice.wav')
 legacy_sound   = get_resource_path('legacy.wav')
 debt_sound     = get_resource_path('debt.wav')
-mud_sound      = get_resource_path('debt.wav')
+mud_sound      = get_resource_path('mud.wav')
+win_sound      = get_resource_path('win.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
 font_emoji_ext = get_resource_path('NotoColorEmoji.ttf')
 
@@ -55,8 +56,9 @@ S_ICE = pygame.mixer.Sound(ice_sound)
 S_LEGACY = pygame.mixer.Sound(legacy_sound)
 S_DEBT = pygame.mixer.Sound(debt_sound)
 S_MUD = pygame.mixer.Sound(mud_sound)
+S_WIN = pygame.mixer.Sound(win_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_MUD):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_MUD, S_WIN):
     if snd:
         snd.set_volume(0.5)
 
@@ -146,8 +148,8 @@ MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-WIN_TIME = 240_000   # 4 minuti
-#WIN_TIME = 15_000   # DEBUG
+#WIN_TIME = 255_000   # 4 minuti e 15sec (traguardo a -15)
+WIN_TIME = 40_000   # DEBUG
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
@@ -160,7 +162,7 @@ TEXT_LIST = [
 "Stovepipe_System", "Smoke_and_Mirrors", "Mushroom_Management",
 "Death_March", "Elephant_in_the_Room", "Boat_Anchor", "Busy_Waiting",
 "Action_at_a_Distance", "Caching_Failure", "Accumulate_and_Fire",
-"Code_Smell", "Lava_Flow", "Accidental_Complexity", "Big_ball_of_Mud",
+"Code_Smell", "Lava_Flow", "Accidental_Complexity", "Ball_of_Mud",
 "Blind_Faith", "Code_Momentum", "DLL_Hell", "Vendor_Lock-in",
 "Input_Kludge", "Double-Checked_Locking", "Interface_Bloat",
 "Continuous_Obsolescence", "Abstraction_Inversion", "Kitchen_Sink",
@@ -316,6 +318,7 @@ class Bird:
         self.alpha = 255
 
     def reset_position(self):
+        self.x = 50
         self.y, self.vel = HEIGHT // 2, 0
 
     def jump(self):
@@ -667,7 +670,7 @@ class BigBallOfMudPipe(Pipe):
                         (self.x-2, self.height+MUD_GAP-2, MUD_PIPE_W+4,
                         HEIGHT-self.height-MUD_GAP-50+4), 2)
 
-        # ------ emoji 💀 al centro di ogni lato ------
+        # ------ emoji al centro di ogni lato ------
         font_big = emoji_font(36)
         icon = font_big.render("💩", True, (0, 0, 0))
         # top
@@ -675,7 +678,7 @@ class BigBallOfMudPipe(Pipe):
         surf.blit(icon, r1)
 
         font_txt = pygame.font.SysFont("ubuntumono", 28) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
-        lines = ["BA", "LL", "__", "OF", "__", "MU", "D"]  # <2 caratteri per riga
+        lines = ["BI", "G_", "BA", "LL", "__", "OF", "__", "MU", "D_"]  # <2 caratteri per riga
         line_h = 24  # altezza singola riga
         start_y_inf = self.height + MUD_GAP + bot_h // 3  # 1/3 del rettangolo inferiore
 
@@ -687,6 +690,44 @@ class BigBallOfMudPipe(Pipe):
             txt_surface = font_txt.render(line, True, (255, 0, 0))
             surf.blit(txt_surface,
                       (self.x + (MUD_PIPE_W - txt_surface.get_width()) // 2, yy))
+
+class FinishLine:
+    """Traguardo a scacchi che appare prima della vittoria"""
+    def __init__(self, x):
+        self.x = x
+        self.width = 40
+        self.checker_size = 25  # dimensione singolo quadrato
+        self.is_finish = True
+        
+    def update(self, speed=3):
+        self.x -= speed
+    
+    def draw(self, surf, alpha=180):
+        """Disegna banda a scacchi bianco-nero semitrasparente"""
+        num_rows = (HEIGHT - 50) // self.checker_size + 1
+        num_cols = self.width // self.checker_size + 1
+        
+        temp_surf = pygame.Surface((self.width, HEIGHT - 50), pygame.SRCALPHA)
+        
+        for row in range(num_rows):
+            for col in range(num_cols):
+                # Alterna bianco e nero
+                color = (255, 255, 255) if (row + col) % 2 == 0 else (0, 0, 0)
+                rect = pygame.Rect(
+                    col * self.checker_size,
+                    row * self.checker_size,
+                    self.checker_size,
+                    self.checker_size
+                )
+                pygame.draw.rect(temp_surf, (*color, alpha), rect)
+        
+        surf.blit(temp_surf, (self.x, 0))
+    
+    def touches_bird(self, bird):
+        """Controlla se il bird ha raggiunto il traguardo"""
+        bird_rect = bird.get_rect()
+        finish_rect = pygame.Rect(self.x, 0, self.width, HEIGHT - 50)
+        return bird_rect.colliderect(finish_rect)
 
 # ==============================================================
 #                      FUNZIONI UI
@@ -1094,6 +1135,9 @@ def main():
     won            = False
     won_waiting    = False
     bonus_win      = 0
+    finish_line = None
+    finish_line_spawned = False
+    auto_flying = False
 
  # ====== AGGIUNGI QUESTO BLOCO DOPO L'INIZIALIZZAZIONE DELLE VARIABILI ======
     # Inizializzazione nuvole
@@ -1241,6 +1285,8 @@ def main():
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear(); playing = True
+                            finish_line = None; finish_line_spawned = False
+                            auto_flying = False
                         elif event.key == pygame.K_o:  # <-- NUOVO: torna al menu selezione
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora O finché non sono passati 2 s
@@ -1348,7 +1394,9 @@ def main():
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear()
-                    elif playing and event.key == pygame.K_SPACE and not paused:
+                            finish_line = None; finish_line_spawned = False
+                            auto_flying = False
+                    elif playing and event.key == pygame.K_SPACE and not paused and not auto_flying:
                         bird.jump()
                         for _ in range(5):
                             particles.append(Particle(bird.x + bird.size//2,
@@ -1406,19 +1454,45 @@ def main():
 
 # ----- aggiorna timer livello -----
             level_timer += dt
-            if level_timer >= WIN_TIME and not won:               # 4 minuti
-                won = True
-                bonus_win = BONUS_WIN
-                if lives == MAX_LIVES:
-                    bonus_win += BONUS_WIN_MAX
-                score += bonus_win
-                if score > best:
-                    best = score
-                won_waiting = True
-                waiting_restart = True
-                game_over_start = now
-                playing = False
-                win_block_until = now + GAME_OVER_WAIT_MS
+            
+            # Spawn finish line 15 secondi prima della fine
+            if level_timer >= WIN_TIME - 15000 and not finish_line_spawned:
+                finish_line = FinishLine(WIDTH)
+                finish_line_spawned = True
+            
+            # Aggiorna finish line
+            if finish_line:
+                finish_line.update(speed=master_speed)
+            
+            # Controlla se il bird tocca il traguardo
+            if finish_line and not auto_flying and finish_line.touches_bird(bird):
+                auto_flying = True
+                bird.vel = 0  # Stabilizza il volo
+                if S_WIN:
+                    S_WIN.play()
+            
+            # Modalità auto-fly: il bird vola automaticamente fino a fine schermo
+            if auto_flying:
+                bird.x += 4  # Velocità costante verso destra
+                bird.y = HEIGHT // 2 - 50  # Mantieni altezza fissa
+                bird.vel = 0
+                
+                # Quando esce dallo schermo, vittoria!
+                if bird.x > WIDTH + bird.size:
+                    won = True
+                    bonus_win = BONUS_WIN
+                    if lives == MAX_LIVES:
+                        bonus_win += BONUS_WIN_MAX
+                    score += bonus_win
+                    if score > best:
+                        best = score
+                    won_waiting = True
+                    waiting_restart = True
+                    game_over_start = now
+                    playing = False
+                    win_block_until = now + GAME_OVER_WAIT_MS
+                    auto_flying = False
+                    
             elif level_timer >= LVL3_TIME and speed_lvl < 2.0:    # 150s -> lvl3
                 speed_lvl = 2.0; score_lvl = 3
             elif level_timer >= LVL2_TIME and speed_lvl < 1.5:    # 90s -> lvl2
@@ -1632,6 +1706,8 @@ def main():
                 
             for p in pipes:
                 p.draw(WIN)
+            if finish_line:
+               finish_line.draw(WIN)
             bird.draw(WIN)
             draw_land(WIN, land_color)
             draw_score(WIN, score)
