@@ -148,8 +148,8 @@ MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-#WIN_TIME = 255_000   # 4 minuti e 15sec (traguardo a -15)
-WIN_TIME = 40_000   # DEBUG
+WIN_TIME = 255_000   # 4 minuti e 15sec (traguardo a -15)
+#WIN_TIME = 40_000   # DEBUG
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100

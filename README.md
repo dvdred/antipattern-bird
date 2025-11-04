@@ -150,9 +150,9 @@ Score: 42      ❤ ❤ ❤      Level 1
 **💩​ MUD** (brown/yellow pipe) [BOSS]
 - Grants instant **15 pts** × level multiplier  
 - Big size Pipe
-- Appears before the 2° and 3° lvl
+- Appears at the end of 2° and 3° lvl
 
-**🪙 GOLDEN** (gold pipe)  
+**🪙 GOLDEN** (gold pipe)
 - +1 Life
 - Appears randomly every 180-210 seconds
 
@@ -202,6 +202,7 @@ When you reach the **4-minute mark**:
 - **Dynamic backgrounds** - Randomized pastel skies and ground colors for each game
 - **Invulnerability flash** - After losing a life, your bird blinks for 2 seconds
 - **Smooth scaling** - Resize the window freely without distortion
+- **A Finish Line** - Endline and final autofly effect to victory!
 
 ## Tips & Tricks
 
