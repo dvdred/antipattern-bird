@@ -37,6 +37,7 @@ class TestGameFilesExist(unittest.TestCase):
             'ice.wav',
             'legacy.wav',
             'debt.wav',
+            'mud.wav',
             'DejaVuSansMono.ttf'
         ]
         
@@ -276,7 +277,64 @@ class TestDrawWinScreen(unittest.TestCase):
         draw_win_screen(surface, score, high_score)
         surface.blit.assert_called()  # Ora funziona perché surface è un Mock
 
-
+class TestBigBallOfMudPipe(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures before each test method."""
+        # Create a mock surface for testing
+        self.mock_surface = Mock()
+        
+    def test_big_ball_of_mud_pipe_initialization(self):
+        """Test that BigBallOfMudPipe initializes correctly"""
+        # Create instance
+        pipe = BigBallOfMudPipe(100)
+        
+        # Check basic attributes
+        self.assertEqual(pipe.x, 100)
+        self.assertEqual(pipe.text, "")
+        self.assertEqual(pipe.gap, MUD_GAP)
+        self.assertTrue(pipe.is_mud)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.color, MUD_COLORS[0])
+        
+        # Check that it inherits from Pipe
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_big_ball_of_mud_pipe_attributes(self):
+        """Test that BigBallOfMudPipe has correct attributes"""
+        pipe = BigBallOfMudPipe(200)
+        
+        # Test that it's properly initialized
+        self.assertEqual(pipe.x, 200)
+        self.assertEqual(pipe.gap, MUD_GAP)
+        self.assertTrue(pipe.is_mud)
+        self.assertEqual(pipe.colors, MUD_COLORS)
+        
+    def test_big_ball_of_mud_pipe_instantiation(self):
+        """Test instantiation with different x positions"""
+        # Test with x = 0
+        pipe1 = BigBallOfMudPipe(0)
+        self.assertEqual(pipe1.x, 0)
+        
+        # Test with x = 100
+        pipe2 = BigBallOfMudPipe(100)
+        self.assertEqual(pipe2.x, 100)
+        
+        # Test with x = 500
+        pipe3 = BigBallOfMudPipe(500)
+        self.assertEqual(pipe3.x, 500)
+        
+    def test_big_ball_of_mud_pipe_inheritance(self):
+        """Test that BigBallOfMudPipe properly inherits from Pipe"""
+        pipe = BigBallOfMudPipe(50)
+        
+        # Check that it has Pipe's essential attributes
+        # Note: You might need to adjust these based on your actual Pipe class
+        self.assertTrue(hasattr(pipe, 'x'))
+        self.assertTrue(hasattr(pipe, 'gap'))
+        self.assertTrue(hasattr(pipe, 'text'))
+        self.assertTrue(hasattr(pipe, 'is_mud'))
+        self.assertTrue(hasattr(pipe, 'colors'))
+        self.assertTrue(hasattr(pipe, 'passed'))
 
 if __name__ == '__main__':
     unittest.main()
