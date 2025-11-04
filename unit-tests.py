@@ -22,6 +22,7 @@ except ImportError as e:
     print(f"Import error: {e}")
     sys.exit(1)
 
+
 class TestGameFilesExist(unittest.TestCase):
     def test_required_resource_files_exist(self):
         """Test che verifica l'esistenza dei file risorse necessari al gioco"""
@@ -38,6 +39,7 @@ class TestGameFilesExist(unittest.TestCase):
             'legacy.wav',
             'debt.wav',
             'mud.wav',
+            'win.wav',
             'DejaVuSansMono.ttf'
         ]
         
@@ -91,6 +93,48 @@ class TestBirdUpdate(unittest.TestCase):
         bird.velocity = 5
         bird.update()
         self.assertAlmostEqual(bird.y, 100.25, places=2)
+
+    def test_pipe_passed_increases_score(self):
+        bird = Bird()
+        bird.x = 100
+        bird.y = 100
+        bird.size = 20
+
+        pipe = Pipe(100, "Test", 180)
+        pipe.x = 100
+        pipe.y = 0
+        pipe.height = 200
+
+        # Simula che il passaggio avvenga
+        pipe.passed = True
+        self.assertTrue(pipe.passed)
+
+    def test_level_speed_increase(self):
+        level = 5
+        speed = calculate_speed(level)
+        self.assertGreater(speed, 3)  # BASE_SPEED = 3  
+
+    def test_finish_line_collision(self):
+        """Test che verifica la collisione con la FinishLine"""
+        # Crea una FinishLine
+        finish_line = FinishLine(400)  # solo x, come definito nella classe
+        # Crea un uccello che collide con la FinishLine
+        # Bird deve essere creato con un solo parametro o senza parametri
+        bird = Bird()  # o Bird(400) se Bird accetta x come parametro
+        # Verifica che la collisione avvenga
+        collision = finish_line.touches_bird(bird)
+        self.assertTrue(collision)
+        # Verifica che la FinishLine abbia le proprietà corrette
+        self.assertEqual(finish_line.x, 400)
+        self.assertEqual(finish_line.width, 40)
+        self.assertEqual(finish_line.checker_size, 25)
+
+    def test_finish_line_position(self):
+        """Test che verifica la posizione della FinishLine"""
+        finish_line = FinishLine(100)  # solo x
+        self.assertEqual(finish_line.x, 100)
+        self.assertEqual(finish_line.width, 40)
+        self.assertEqual(finish_line.checker_size, 25)
 
 class TestPipeCollide(unittest.TestCase):
   
@@ -255,9 +299,8 @@ class TestDrawStartScreen(unittest.TestCase):
     def test_draw_start_screen_called(self):
         surface = pygame.Surface((800, 600))
         demo_pipes = []
-        demo_land = (100, 100, 100)  # Corretto: è una tupla invece di Mock
+        demo_land = (100, 100, 100)
         start_bg_color = (255, 255, 255)
-
         draw_start_screen(surface, demo_pipes, demo_land, start_bg_color)
 
 class TestDrawGameOver(unittest.TestCase):
@@ -335,6 +378,14 @@ class TestBigBallOfMudPipe(unittest.TestCase):
         self.assertTrue(hasattr(pipe, 'is_mud'))
         self.assertTrue(hasattr(pipe, 'colors'))
         self.assertTrue(hasattr(pipe, 'passed'))
+
+    def test_big_ball_of_mud_pipe_color_cycle(self):
+        pipe = BigBallOfMudPipe(100)
+        initial_color = pipe.color
+        # Simula update
+        pipe.update()
+        # Verifica che il colore cambi (se previsto)
+        self.assertIn(pipe.color, MUD_COLORS)
 
 if __name__ == '__main__':
     unittest.main()

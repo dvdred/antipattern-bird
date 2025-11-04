@@ -147,6 +147,11 @@ Score: 42      ❤ ❤ ❤      Level 1
   - A anchor appears over the bird
 - Appears randomly every 45-70 seconds
 
+**💩​ MUD** (brown/yellow pipe) [BOSS]
+- Grants instant **15 pts** × level multiplier  
+- Big size Pipe
+- Appears before the 2° and 3° lvl
+
 **🪙 GOLDEN** (gold pipe)  
 - +1 Life
 - Appears randomly every 180-210 seconds

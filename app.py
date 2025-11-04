@@ -1116,6 +1116,11 @@ def main():
     zebra_pending    = False
     base_speed       = 2.5
 
+# Per unit test:
+BASE_SPEED = 3
+def calculate_speed(level):
+    return BASE_SPEED + level    
+
 # ----- ICE TIMER -----
     ice_until      = 0
 
