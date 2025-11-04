@@ -1553,7 +1553,7 @@ def main():
                 else:
                     pipes.append(Pipe(WIDTH, gap=current_gap))
 
-            if invuln_time == 0:
+            if invuln_time == 0 and not auto_flying:
                 collided_this_frame = False
 
                 # 1. Collisione con i tubi
