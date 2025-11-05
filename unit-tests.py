@@ -38,6 +38,7 @@ class TestGameFilesExist(unittest.TestCase):
             'ice.wav',
             'legacy.wav',
             'debt.wav',
+            'spaghetti.wav',            
             'mud.wav',
             'win.wav',
             'DejaVuSansMono.ttf'
@@ -260,12 +261,14 @@ class TestDrawDebugInfo(unittest.TestCase):
         zebra_active = True
         ice_active = False
         debt_active = True
+        spaghetti_active = False  # <-- AGGIUNTO parametro mancante
         master_speed = 10
         level_timer = 120
         current_gap = 180
         debt_mult = 2
 
         draw_debug_info(surface, base_speed, speed_lvl, zebra_active, ice_active, debt_active,
+                        spaghetti_active,  # <-- AGGIUNTO qui
                         master_speed, level_timer, current_gap, debt_mult)
 
         surface.blit.assert_called()
@@ -389,6 +392,223 @@ class TestBigBallOfMudPipe(unittest.TestCase):
         pipe.update()
         # Verifica che il colore cambi (se previsto)
         self.assertIn(pipe.color, MUD_COLORS)
+
+class TestSpaghettiPipe(unittest.TestCase):
+    def setUp(self):
+        """Set up test fixtures before each test method."""
+        # Create a mock surface for testing
+        self.mock_surface = Mock()
+        
+    def test_spaghetti_pipe_initialization(self):
+        """Test that SpaghettiPipe initializes correctly"""
+        # Create instance
+        pipe = SpaghettiPipe(100)
+        
+        # Check basic attributes
+        self.assertEqual(pipe.x, 100)
+        self.assertEqual(pipe.text, "")
+        self.assertEqual(pipe.gap, PIPE_GAP)
+        self.assertTrue(pipe.is_spaghetti)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.colors, SPAGHETTI_COLORS)
+        self.assertEqual(pipe.stripe_width, 15)
+        self.assertEqual(pipe.anim_offset, 0)
+        
+        # Check that it inherits from Pipe
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_spaghetti_pipe_attributes(self):
+        """Test that SpaghettiPipe has correct attributes"""
+        pipe = SpaghettiPipe(200)
+        
+        # Test that it's properly initialized
+        self.assertEqual(pipe.x, 200)
+        self.assertEqual(pipe.gap, PIPE_GAP)
+        self.assertTrue(pipe.is_spaghetti)
+        self.assertEqual(pipe.colors, SPAGHETTI_COLORS)
+        self.assertEqual(len(pipe.colors), 2)  # Giallo e rosso
+        
+    def test_spaghetti_pipe_instantiation(self):
+        """Test instantiation with different x positions"""
+        # Test with x = 0
+        pipe1 = SpaghettiPipe(0)
+        self.assertEqual(pipe1.x, 0)
+        
+        # Test with x = 100
+        pipe2 = SpaghettiPipe(100)
+        self.assertEqual(pipe2.x, 100)
+        
+        # Test with x = 500
+        pipe3 = SpaghettiPipe(500)
+        self.assertEqual(pipe3.x, 500)
+        
+    def test_spaghetti_pipe_inheritance(self):
+        """Test that SpaghettiPipe properly inherits from Pipe"""
+        pipe = SpaghettiPipe(50)
+        
+        # Check that it has Pipe's essential attributes
+        self.assertTrue(hasattr(pipe, 'x'))
+        self.assertTrue(hasattr(pipe, 'gap'))
+        self.assertTrue(hasattr(pipe, 'text'))
+        self.assertTrue(hasattr(pipe, 'is_spaghetti'))
+        self.assertTrue(hasattr(pipe, 'colors'))
+        self.assertTrue(hasattr(pipe, 'passed'))
+        self.assertTrue(hasattr(pipe, 'stripe_width'))
+        self.assertTrue(hasattr(pipe, 'anim_offset'))
+
+    def test_spaghetti_pipe_animation_update(self):
+        """Test that the animation offset updates correctly"""
+        pipe = SpaghettiPipe(100)
+        initial_offset = pipe.anim_offset
+        
+        # Simula update con velocità 3 (default)
+        pipe.update(3)
+        
+        # L'offset dovrebbe essere aumentato di 2
+        expected_offset = (initial_offset + 2) % (pipe.stripe_width * 2)
+        self.assertEqual(pipe.anim_offset, expected_offset)
+        
+    def test_spaghetti_pipe_animation_wraps(self):
+        """Test that animation offset wraps around correctly"""
+        pipe = SpaghettiPipe(100)
+        
+        # Set offset vicino al max
+        pipe.anim_offset = pipe.stripe_width * 2 - 1
+        
+        # Update dovrebbe far wrappare l'offset
+        pipe.update(3)
+        
+        # Dovrebbe essere tornato a 1 (wrapping)
+        expected = (pipe.stripe_width * 2 - 1 + 2) % (pipe.stripe_width * 2)
+        self.assertEqual(pipe.anim_offset, expected)
+        
+    def test_spaghetti_pipe_position_update(self):
+        """Test that the pipe position updates correctly"""
+        pipe = SpaghettiPipe(100)
+        initial_x = pipe.x
+        speed = 5
+        
+        pipe.update(speed)
+        
+        # La x dovrebbe essere diminuita di speed
+        self.assertEqual(pipe.x, initial_x - speed)
+        
+    def test_spaghetti_pipe_colors(self):
+        """Test that SpaghettiPipe has correct colors (yellow and red)"""
+        pipe = SpaghettiPipe(100)
+        
+        # SPAGHETTI_COLORS dovrebbe essere [(255, 215, 0), (255, 0, 0)]
+        self.assertEqual(len(pipe.colors), 2)
+        self.assertEqual(pipe.colors[0], (255, 215, 0))  # Giallo
+        self.assertEqual(pipe.colors[1], (255, 0, 0))    # Rosso
+        
+    def test_spaghetti_pipe_draw_method_exists(self):
+        """Test that SpaghettiPipe has a draw method"""
+        pipe = SpaghettiPipe(100)
+        
+        # Verifica che il metodo draw esista
+        self.assertTrue(hasattr(pipe, 'draw'))
+        self.assertTrue(callable(pipe.draw))
+        
+    def test_spaghetti_pipe_draw_called(self):
+        """Test that draw method can be called without errors"""
+        pipe = SpaghettiPipe(100)
+        # Usa una vera superficie pygame invece di Mock
+        surface = pygame.Surface((WIDTH, HEIGHT))
+        
+        # Chiamata al metodo draw non dovrebbe sollevare eccezioni
+        try:
+            pipe.draw(surface, alpha=255)
+            success = True
+        except Exception as e:
+            success = False
+            print(f"Exception raised: {e}")  # Per debug
+            
+        self.assertTrue(success, "draw() method raised an exception")
+
+class TestSpaghettiPipeEffects(unittest.TestCase):
+    """Test per gli effetti speciali della SpaghettiPipe"""
+    
+    def test_spaghetti_points_constant(self):
+        """Test che SPAGHETTI_POINTS sia definito correttamente"""
+        self.assertEqual(SPAGHETTI_POINTS, 7)
+        
+    def test_spaghetti_duration_constant(self):
+        """Test che SPAGHETTI_DURATION_MS sia definito correttamente"""
+        self.assertEqual(SPAGHETTI_DURATION_MS, 6_000)  # 6 secondi
+        
+    def test_spaghetti_spawn_time_constants(self):
+        """Test che i tempi di spawn siano definiti correttamente"""
+        self.assertEqual(SPAGHETTI_MIN_MS, 75_000)   # 75 secondi
+        self.assertEqual(SPAGHETTI_MAX_MS, 100_000)  # 100 secondi
+        
+    def test_spaghetti_colors_constant(self):
+        """Test che SPAGHETTI_COLORS sia definito correttamente"""
+        self.assertEqual(len(SPAGHETTI_COLORS), 2)
+        self.assertEqual(SPAGHETTI_COLORS[0], (255, 215, 0))  # Giallo
+        self.assertEqual(SPAGHETTI_COLORS[1], (255, 0, 0))    # Rosso
+
+class TestBirdInvertedGravity(unittest.TestCase):
+    """Test per la gravità invertita causata da SpaghettiPipe"""
+    
+    def test_bird_update_normal_gravity(self):
+        """Test che la gravità normale funzioni correttamente"""
+        bird = Bird()
+        bird.y = 100
+        bird.vel = 0
+        
+        # Update senza gravità invertita
+        bird.update(gravity_mult=1.0, inverted=False)
+        
+        # La velocità dovrebbe aumentare verso il basso (positiva)
+        self.assertGreater(bird.vel, 0, "Normal gravity should increase downward velocity")
+        
+    def test_bird_update_inverted_gravity(self):
+        """Test che la gravità invertita funzioni correttamente"""
+        bird = Bird()
+        bird.y = 100
+        bird.vel = 0
+        
+        # Update con gravità invertita
+        bird.update(gravity_mult=1.0, inverted=True)
+        
+        # La velocità dovrebbe diminuire (gravità verso l'alto è negativa)
+        self.assertLess(bird.vel, 0, "Inverted gravity should decrease velocity (upward)")
+        
+    def test_bird_jump_normal(self):
+        """Test che il salto normale funzioni correttamente"""
+        bird = Bird()
+        bird.vel = 0
+        
+        # Salto normale
+        bird.jump(inverted=False)
+        
+        # La velocità dovrebbe essere -6 (JUMP)
+        self.assertEqual(bird.vel, JUMP)
+        self.assertEqual(bird.vel, -6)
+        
+    def test_bird_jump_inverted(self):
+        """Test che il salto invertito funzioni correttamente"""
+        bird = Bird()
+        bird.vel = 0
+        
+        # Salto invertito
+        bird.jump(inverted=True)
+        
+        # La velocità dovrebbe essere +6 (-JUMP)
+        self.assertEqual(bird.vel, -JUMP)
+        self.assertEqual(bird.vel, 6)
+        
+    def test_bird_velocity_limits_inverted(self):
+        """Test che i limiti di velocità funzionino anche con gravità invertita"""
+        bird = Bird()
+        bird.vel = -15  # Oltre il limite
+        
+        bird.update(gravity_mult=1.0, inverted=True)
+        
+        # La velocità dovrebbe essere clampata tra -10 e 10
+        self.assertGreaterEqual(bird.vel, -10)
+        self.assertLessEqual(bird.vel, 10)
 
 if __name__ == '__main__':
     unittest.main()

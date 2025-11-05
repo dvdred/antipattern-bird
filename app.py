@@ -1352,6 +1352,7 @@ def main():
                     paused = not paused
                     break
                 
+                if waiting_restart:  # ✅ AGGIUNTO questo controllo
                     if won_waiting: # Vittoria
                         if event.key == pygame.K_SPACE:
                             if now < win_block_until:
