@@ -66,16 +66,11 @@ jobs:
       - run: pip install pyinstaller
       - run: pip install -r requirements.txt
       - run: >
-          pyinstaller --onefile
-            --strip
-            --exclude-module pytest
-            --exclude-module setuptools
-            --exclude-module tkinter
-            --add-data "icon32.png:."
-            --add-data "*.wav:."
-            --add-data "*.ttf:."
-            --name antipattern-bird app.py
-      # Opzionale: compressione UPX (può ridurre ulteriormente)
+          pyinstaller --onefile --strip --exclude-module pytest --exclude-module setuptools --exclude-module tkinter
+          --add-data "icon32.png:."
+          --add-data "*.wav:."
+          --add-data "*.ttf:."
+          --name antipattern-bird app.py      
       - run: |
           sudo apt-get update
           sudo apt-get install -y upx
