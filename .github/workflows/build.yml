@@ -67,10 +67,20 @@ jobs:
       - run: pip install -r requirements.txt
       - run: >
           pyinstaller --onefile
-          --add-data "icon32.png:."
-          --add-data "*.wav:."
-          --add-data "*.ttf:."
-          --name antipattern-bird app.py
+            --strip
+            --exclude-module pytest
+            --exclude-module setuptools
+            --exclude-module tkinter
+            --add-data "icon32.png:."
+            --add-data "*.wav:."
+            --add-data "*.ttf:."
+            --name antipattern-bird app.py
+      # Opzionale: compressione UPX (può ridurre ulteriormente)
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y upx
+          upx --best --lzma dist/antipattern-bird
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-linux-x64
