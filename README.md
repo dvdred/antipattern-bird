@@ -147,6 +147,12 @@ Score: 42      ❤ ❤ ❤      Level 1
   - A anchor appears over the bird
 - Appears randomly every 45-70 seconds
 
+**🍝 Spaghetti** (animated red/yellow pipe)
+- Effect: Reverses controls for a few seconds (Jump descends instead of ascends, and gravity is reversed for that time)
+- Visual: Two-tone yellow and red wavy/intertwined stripes similar to those on barber poles
+- Points: +7
+- Spawn: Medium-rare (70-100 seconds)
+
 **💩​ MUD** (brown/yellow pipe) [BOSS]
 - Grants instant **15 pts** × level multiplier  
 - Big size Pipe
@@ -223,6 +229,7 @@ When you reach the **4-minute mark**:
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
 - 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
 - 🪨 Tech Debt Pipe ( https://freesound.org/people/joseegn/sounds/752434/ )
+- 🍝 Spaghetti Pipe ( https://freesound.org/people/plagasRZ/sounds/326349/ )
 - 💩 BBall of Mud Pipe ( https://freesound.org/people/Breviceps/sounds/445117/ )
 - 🏆​ Victory! ( https://freesound.org/people/Victor_Natas/sounds/741118/ )
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
@@ -241,7 +248,7 @@ When you reach the **4-minute mark**:
 
 - **Made with 💜 by** dvdred@gmail.com  
 - **License**: GPL3  
-- **Font**: DejaVu Sans Mono (for emoji support)
+- **Font**: DejaVu Sans Mono and NotoColorEmoji (for emoji support)
 - **AntiPattern names** inspired by software engineering anti-patterns
 
 ---
