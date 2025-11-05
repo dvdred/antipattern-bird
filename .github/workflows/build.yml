@@ -70,11 +70,7 @@ jobs:
           --add-data "icon32.png:."
           --add-data "*.wav:."
           --add-data "*.ttf:."
-          --name antipattern-bird app.py      
-      - run: |
-          sudo apt-get update
-          sudo apt-get install -y upx
-          upx --best --lzma dist/antipattern-bird
+          --name antipattern-bird app.py
         continue-on-error: true
       - uses: actions/upload-artifact@v4
         with:
