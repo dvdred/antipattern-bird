@@ -30,10 +30,18 @@ rainbow_sound  = get_resource_path('rainbow.wav')
 lifeup_sound   = get_resource_path('lifeup.wav')
 lifedown_sound = get_resource_path('lifedown.wav')
 golden_sound   = get_resource_path('golden.wav')
-ice_sound   = get_resource_path('ice.wav')
+ice_sound      = get_resource_path('ice.wav')
 legacy_sound   = get_resource_path('legacy.wav')
-debt_sound = get_resource_path('debt.wav')
+debt_sound     = get_resource_path('debt.wav')
+mud_sound      = get_resource_path('mud.wav')
+win_sound      = get_resource_path('win.wav')
 font_emoji     = get_resource_path('DejaVuSansMono.ttf')
+font_emoji_ext = get_resource_path('NotoColorEmoji.ttf')
+
+# ---------- config ----------
+EMOJI_SCALE = 0.25          # 1.0 = nativo, 0.25 → 1/4, 1.5 → +50 %
+EMOJI_BASE_SIZE = 128       # usato solo per generare il bitmap
+# ----------------------------
 
 ICON = pygame.image.load(icon_path)
 pygame.display.set_icon(ICON)
@@ -47,8 +55,10 @@ S_GOLDEN = pygame.mixer.Sound(golden_sound)
 S_ICE = pygame.mixer.Sound(ice_sound)
 S_LEGACY = pygame.mixer.Sound(legacy_sound)
 S_DEBT = pygame.mixer.Sound(debt_sound)
+S_MUD = pygame.mixer.Sound(mud_sound)
+S_WIN = pygame.mixer.Sound(win_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_MUD, S_WIN):
     if snd:
         snd.set_volume(0.5)
 
@@ -125,12 +135,21 @@ DEBT_POINTS = 5              # Moltiplicato per livello
 DEBT_DURATION_MS = 8_000     # 8 secondi
 DEBT_GRAVITY_MULT = 1.2      # +20% gravità
 
+# ---------- BIG BALL OF MUD PIPE (mini-boss) ----------
+MUD_MIN_MS        = 110_000          # 3,5 min
+MUD_MAX_MS        = 115_000          # fissa (può rimanere random se vuoi)
+MUD_POINTS        = 15
+MUD_PIPE_W        = 110              # larghezza pipe
+MUD_GAP           = 110               # altezza singolo gap
+MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
+                     (255, 215, 0)]   # giallo    (come Golden)
+
 # ---------- LEVEL TIMEs ----------
 LVL2_TIME = 90_000
 LVL3_TIME = 150_000
 
-WIN_TIME = 240_000   # 4 minuti
-#WIN_TIME = 15_000   # DEBUG
+WIN_TIME = 255_000   # 4 minuti e 15sec (traguardo a -15)
+#WIN_TIME = 40_000   # DEBUG
 GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
@@ -143,7 +162,7 @@ TEXT_LIST = [
 "Stovepipe_System", "Smoke_and_Mirrors", "Mushroom_Management",
 "Death_March", "Elephant_in_the_Room", "Boat_Anchor", "Busy_Waiting",
 "Action_at_a_Distance", "Caching_Failure", "Accumulate_and_Fire",
-"Code_Smell", "Lava_Flow", "Accidental_Complexity", "Big_ball_of_Mud",
+"Code_Smell", "Lava_Flow", "Accidental_Complexity", "Ball_of_Mud",
 "Blind_Faith", "Code_Momentum", "DLL_Hell", "Vendor_Lock-in",
 "Input_Kludge", "Double-Checked_Locking", "Interface_Bloat",
 "Continuous_Obsolescence", "Abstraction_Inversion", "Kitchen_Sink",
@@ -153,6 +172,38 @@ TEXT_LIST = [
 "Reinventing_the_wheel", "Reinventing_the_Square_Wheel", "Fencepost",
 "Software_Bloat", "Spaghetti_Code", "Hard_Code", "Soft_Code", "Dead_End"
 ]
+
+def emoji_font(size, scale=None):
+    """
+    Ritorna un oggetto "Font" compatto con pygame che:
+      - carica NotoColorEmoji
+      - renderizza sempre a EMOJI_BASE_SIZE (128 px nativi)
+      - restituisce la superficie ridimensionata a `size` pixel
+    Uso esattamente come un font normale:
+        font = emoji_font(24)           # 24 px finali
+        surf = font.render("💩", True, col)
+    """
+    if scale is None:                   # calcola automaticamente
+        scale = size / EMOJI_BASE_SIZE
+    loader = pygame.font.Font(font_emoji_ext, EMOJI_BASE_SIZE)
+
+    class EmojiFont:
+        __slots__ = ("_ldr", "_sc")
+        def __init__(self, loader, scale):
+            self._ldr, self._sc = loader, scale
+        def render(self, text, antialias, color, background=None):
+            big = self._ldr.render(text, antialias, color, background)
+            if self._sc == 1.0:
+                return big
+            new_sz = (int(big.get_width()  * self._sc),
+                      int(big.get_height() * self._sc))
+            return pygame.transform.smoothscale(big, new_sz)
+        # metodi utili, se vuoi: size, metrics, ecc.
+        @property
+        def size(self):                 # "virtual" size
+            return int(EMOJI_BASE_SIZE * self._sc)
+
+    return EmojiFont(loader, scale)
 
 def get_pipe_spawn_time(speed, distance):
     """Calcola millisecondi necessari affinché una pipe percorra 'distance' pixel alla velocità 'speed'"""
@@ -267,6 +318,7 @@ class Bird:
         self.alpha = 255
 
     def reset_position(self):
+        self.x = 50
         self.y, self.vel = HEIGHT // 2, 0
 
     def jump(self):
@@ -547,20 +599,9 @@ class TechnicalDebtPipe(Pipe):
         surf.blit(bottom, (self.x, self.height + self.gap))
 
         # Testo "Technical_Debt" spezzato
-        font_small = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
+        font_small = pygame.font.SysFont("ubuntumono", 20) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
         lines = ["TE", "CH", "NI", "CA", "L_", "DE", "BT"]
         total_h = len(lines) * 20
-        
-        # Disegna nella parte superiore
-        start_y = max(5, (self.height - total_h) // 2)
-        for i, line in enumerate(lines):
-            y_line = start_y + i * 20
-            if y_line + 20 > self.height - 5:
-                continue
-            txt = font_small.render(line, True, (200, 200, 200))  # Grigio chiaro
-            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
-            if txt.get_width() <= PIPE_W - 4:
-                surf.blit(txt, (x_txt, y_line))
 
         # Disegna nella parte inferiore
         start_y_bot = max(5, (bot_h - total_h) // 2)
@@ -574,16 +615,119 @@ class TechnicalDebtPipe(Pipe):
                 surf.blit(txt, (x_txt, self.height + self.gap + y_line))
         
         # Icona ⚓ al centro (simbolo di peso/debito)
-        font_big = pygame.font.Font(font_emoji, 36) or pygame.font.SysFont(None, 36)
+        font_big = emoji_font(36)
         icon = font_big.render("⚓", True, (255, 200, 0))  # Oro scuro
         
         # Top center
         rect = icon.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
-        surf.blit(icon, rect)
+        surf.blit(icon, rect)        
+
+class BigBallOfMudPipe(Pipe):
+    def __init__(self, x):
+        super().__init__(x, text="", gap=MUD_GAP)
+        self.colors = MUD_COLORS
+        self.is_mud = True
+        self.passed = False
+        self.color = self.colors[0]   # serve solo per evitare errori nei print
+
+    # override larghezza
+    def draw(self, surf, alpha=255):
+        """Bande orizzontali 80 px, alternanza marrone-giallo"""
+        bh = 80  # altezza singola banda
+        bot_h = HEIGHT - self.height - MUD_GAP - 50
+
+        # ---------- parte SUPERIORE ----------
+        y = 0
+        while y < self.height:
+            band_h = min(bh, self.height - y)
+            for i, col in enumerate(self.colors):
+                yy = y + i * bh
+                if yy >= self.height:
+                    break
+                rect = pygame.Surface((MUD_PIPE_W, min(bh, self.height - yy)), pygame.SRCALPHA)
+                rect.fill((*col, alpha))
+                surf.blit(rect, (self.x, yy))
+
+            y += len(self.colors) * bh  # salta un "set" completo
+
+        # ---------- parte INFERIORE ----------
+        y2 = self.height + MUD_GAP
+        while y2 < self.height + MUD_GAP + bot_h:
+            for i, col in enumerate(self.colors):
+                yy = y2 + i * bh
+                if yy >= self.height + MUD_GAP + bot_h:
+                    break
+                rect = pygame.Surface((MUD_PIPE_W, min(bh, (self.height + MUD_GAP + bot_h) - yy)), pygame.SRCALPHA)
+                rect.fill((*col, alpha))
+                surf.blit(rect, (self.x, yy))
+
+            y2 += len(self.colors) * bh
+
+        # ------ bordo nero esterno ------
+        pygame.draw.rect(surf, (0, 0, 0),
+                        (self.x-2, -2, MUD_PIPE_W+4, self.height+4), 2)
+        pygame.draw.rect(surf, (0, 0, 0),
+                        (self.x-2, self.height+MUD_GAP-2, MUD_PIPE_W+4,
+                        HEIGHT-self.height-MUD_GAP-50+4), 2)
+
+        # ------ emoji al centro di ogni lato ------
+        font_big = emoji_font(36)
+        icon = font_big.render("💩", True, (0, 0, 0))
+        # top
+        r1 = icon.get_rect(center=(self.x + MUD_PIPE_W//2, self.height//2))
+        surf.blit(icon, r1)
+
+        font_txt = pygame.font.SysFont("ubuntumono", 28) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
+        lines = ["BI", "G_", "BA", "LL", "__", "OF", "__", "MU", "D_"]  # <2 caratteri per riga
+        line_h = 24  # altezza singola riga
+        start_y_inf = self.height + MUD_GAP + bot_h // 3  # 1/3 del rettangolo inferiore
+
+        # disegna INFERIORE
+        for i, line in enumerate(lines):
+            yy = start_y_inf + i * line_h
+            if yy + line_h > self.height + MUD_GAP + bot_h - 4:
+                continue
+            txt_surface = font_txt.render(line, True, (255, 0, 0))
+            surf.blit(txt_surface,
+                      (self.x + (MUD_PIPE_W - txt_surface.get_width()) // 2, yy))
+
+class FinishLine:
+    """Traguardo a scacchi che appare prima della vittoria"""
+    def __init__(self, x):
+        self.x = x
+        self.width = 40
+        self.checker_size = 25  # dimensione singolo quadrato
+        self.is_finish = True
         
-        # Bottom center
-        rect.centery = self.height + self.gap + bot_h // 2
-        surf.blit(icon, rect)
+    def update(self, speed=3):
+        self.x -= speed
+    
+    def draw(self, surf, alpha=180):
+        """Disegna banda a scacchi bianco-nero semitrasparente"""
+        num_rows = (HEIGHT - 50) // self.checker_size + 1
+        num_cols = self.width // self.checker_size + 1
+        
+        temp_surf = pygame.Surface((self.width, HEIGHT - 50), pygame.SRCALPHA)
+        
+        for row in range(num_rows):
+            for col in range(num_cols):
+                # Alterna bianco e nero
+                color = (255, 255, 255) if (row + col) % 2 == 0 else (0, 0, 0)
+                rect = pygame.Rect(
+                    col * self.checker_size,
+                    row * self.checker_size,
+                    self.checker_size,
+                    self.checker_size
+                )
+                pygame.draw.rect(temp_surf, (*color, alpha), rect)
+        
+        surf.blit(temp_surf, (self.x, 0))
+    
+    def touches_bird(self, bird):
+        """Controlla se il bird ha raggiunto il traguardo"""
+        bird_rect = bird.get_rect()
+        finish_rect = pygame.Rect(self.x, 0, self.width, HEIGHT - 50)
+        return bird_rect.colliderect(finish_rect)
 
 # ==============================================================
 #                      FUNZIONI UI
@@ -963,6 +1107,7 @@ def main():
     ice_next       = pygame.time.get_ticks() + random.randint(ICE_MIN_MS, ICE_MAX_MS)
     legacy_next    = pygame.time.get_ticks() + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
     debt_next      = pygame.time.get_ticks() + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+    mud_next       = pygame.time.get_ticks() + random.randint(MUD_MIN_MS, MUD_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -971,11 +1116,19 @@ def main():
     zebra_pending    = False
     base_speed       = 2.5
 
+# # Per unit test:
+# BASE_SPEED = 2.5
+# def calculate_speed(level):
+#     return BASE_SPEED + level    
+
 # ----- ICE TIMER -----
     ice_until      = 0
 
 # ----- DEBT TIMER -----
     debt_until     = 0
+
+# ----- BOSS TIMER -----
+    ice_until      = 0
 
 # ----- LIVELLI -----
     level_timer      = 0
@@ -987,6 +1140,9 @@ def main():
     won            = False
     won_waiting    = False
     bonus_win      = 0
+    finish_line = None
+    finish_line_spawned = False
+    auto_flying = False
 
  # ====== AGGIUNGI QUESTO BLOCO DOPO L'INIZIALIZZAZIONE DELLE VARIABILI ======
     # Inizializzazione nuvole
@@ -1128,11 +1284,14 @@ def main():
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                            mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear(); playing = True
+                            finish_line = None; finish_line_spawned = False
+                            auto_flying = False
                         elif event.key == pygame.K_o:  # <-- NUOVO: torna al menu selezione
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora O finché non sono passati 2 s
@@ -1234,12 +1393,15 @@ def main():
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                            mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear()
-                    elif playing and event.key == pygame.K_SPACE and not paused:
+                            finish_line = None; finish_line_spawned = False
+                            auto_flying = False
+                    elif playing and event.key == pygame.K_SPACE and not paused and not auto_flying:
                         bird.jump()
                         for _ in range(5):
                             particles.append(Particle(bird.x + bird.size//2,
@@ -1297,19 +1459,45 @@ def main():
 
 # ----- aggiorna timer livello -----
             level_timer += dt
-            if level_timer >= WIN_TIME and not won:               # 4 minuti
-                won = True
-                bonus_win = BONUS_WIN
-                if lives == MAX_LIVES:
-                    bonus_win += BONUS_WIN_MAX
-                score += bonus_win
-                if score > best:
-                    best = score
-                won_waiting = True
-                waiting_restart = True
-                game_over_start = now
-                playing = False
-                win_block_until = now + GAME_OVER_WAIT_MS
+            
+            # Spawn finish line 15 secondi prima della fine
+            if level_timer >= WIN_TIME - 15000 and not finish_line_spawned:
+                finish_line = FinishLine(WIDTH)
+                finish_line_spawned = True
+            
+            # Aggiorna finish line
+            if finish_line:
+                finish_line.update(speed=master_speed)
+            
+            # Controlla se il bird tocca il traguardo
+            if finish_line and not auto_flying and finish_line.touches_bird(bird):
+                auto_flying = True
+                bird.vel = 0  # Stabilizza il volo
+                if S_WIN:
+                    S_WIN.play()
+            
+            # Modalità auto-fly: il bird vola automaticamente fino a fine schermo
+            if auto_flying:
+                bird.x += 4  # Velocità costante verso destra
+                bird.y = HEIGHT // 2 - 50  # Mantieni altezza fissa
+                bird.vel = 0
+                
+                # Quando esce dallo schermo, vittoria!
+                if bird.x > WIDTH + bird.size:
+                    won = True
+                    bonus_win = BONUS_WIN
+                    if lives == MAX_LIVES:
+                        bonus_win += BONUS_WIN_MAX
+                    score += bonus_win
+                    if score > best:
+                        best = score
+                    won_waiting = True
+                    waiting_restart = True
+                    game_over_start = now
+                    playing = False
+                    win_block_until = now + GAME_OVER_WAIT_MS
+                    auto_flying = False
+                    
             elif level_timer >= LVL3_TIME and speed_lvl < 2.0:    # 150s -> lvl3
                 speed_lvl = 2.0; score_lvl = 3
             elif level_timer >= LVL2_TIME and speed_lvl < 1.5:    # 90s -> lvl2
@@ -1359,10 +1547,13 @@ def main():
                 elif now >= rainbow_next:
                     pipes.append(RainbowPipe(WIDTH, gap=current_gap))
                     rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                elif now >= mud_next:
+                    pipes.append(BigBallOfMudPipe(WIDTH))
+                    mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                 else:
                     pipes.append(Pipe(WIDTH, gap=current_gap))
 
-            if invuln_time == 0:
+            if invuln_time == 0 and not auto_flying:
                 collided_this_frame = False
 
                 # 1. Collisione con i tubi
@@ -1431,6 +1622,10 @@ def main():
                                 S_DEBT.play()
                                 flash_until = now + FLASH_MS
                                 skip_zebra_mult = True  # Debt NON beneficia di zebra mode
+                            elif getattr(p, 'is_mud', False):
+                                pts = MUD_POINTS
+                                S_MUD.play()
+                                flash_until = now + FLASH_MS
                             elif getattr(p, 'is_legacy', False):
                                 pts = LEGACY_POINTS
                                 S_LEGACY.play()
@@ -1516,6 +1711,8 @@ def main():
                 
             for p in pipes:
                 p.draw(WIN)
+            if finish_line:
+               finish_line.draw(WIN)
             bird.draw(WIN)
             draw_land(WIN, land_color)
             draw_score(WIN, score)

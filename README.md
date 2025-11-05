@@ -147,7 +147,12 @@ Score: 42      ❤ ❤ ❤      Level 1
   - A anchor appears over the bird
 - Appears randomly every 45-70 seconds
 
-**🪙 GOLDEN** (gold pipe)  
+**💩​ MUD** (brown/yellow pipe) [BOSS]
+- Grants instant **15 pts** × level multiplier  
+- Big size Pipe
+- Appears at the end of 2° and 3° lvl
+
+**🪙 GOLDEN** (gold pipe)
 - +1 Life
 - Appears randomly every 180-210 seconds
 
@@ -197,6 +202,7 @@ When you reach the **4-minute mark**:
 - **Dynamic backgrounds** - Randomized pastel skies and ground colors for each game
 - **Invulnerability flash** - After losing a life, your bird blinks for 2 seconds
 - **Smooth scaling** - Resize the window freely without distortion
+- **A Finish Line** - Endline and final autofly effect to victory!
 
 ## Tips & Tricks
 
@@ -217,6 +223,8 @@ When you reach the **4-minute mark**:
 - 🧊 Ice Pipe ( https://freesound.org/people/JarredGibb/sounds/263915/ )
 - 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
 - 🪨 Tech Debt Pipe ( https://freesound.org/people/joseegn/sounds/752434/ )
+- 💩 BBall of Mud Pipe ( https://freesound.org/people/Breviceps/sounds/445117/ )
+- 🏆​ Victory! ( https://freesound.org/people/Victor_Natas/sounds/741118/ )
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
