@@ -294,12 +294,12 @@ class TestDrawShapeSelectionMenu(unittest.TestCase):
         current_shape = "circle"
         current_color = (0, 0, 0)
         debug_mode = False
-
-        result = draw_shape_selection_menu(surface, bg_color, current_shape, current_color, debug_mode)
+        audio_enabled = True
+        result = draw_shape_selection_menu(surface, bg_color, current_shape, current_color, debug_mode, audio_enabled)
 
         # Verifica che la funzione non sollevi eccezioni e restituisca qualcosa
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 3)  # 3 elementi come mostrato nel messaggio
+        self.assertEqual(len(result), 4)  # 3 elementi come mostrato nel messaggio
 
 class TestDrawStartScreen(unittest.TestCase):
     def test_draw_start_screen_called(self):

@@ -163,6 +163,7 @@ GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
 DEBUG_MODE = False
+AUDIO_ENABLED = True
 FLASH_MS = 150
 FLASH_COLOR = (255,255,255)
 
@@ -909,7 +910,7 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     pygame.draw.rect(surf, (70, 130, 180), btn, border_radius=10)
     surf.blit(inst, inst.get_rect(center=btn.center))
 
-def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode):
+def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode, audio_enabled):
     surf.fill(bg_color)
     
     font_title = pygame.font.SysFont("ubuntumono", 40, bold=True) or pygame.font.SysFont(None, 40)
@@ -1032,23 +1033,59 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
     pygame.draw.rect(surf, debug_color, debug_btn, border_radius=8)
     
     debug_status = "ON" if debug_mode else "OFF"
-    # Usa il font emoji come per i cuori
-    font_debug = pygame.font.Font(font_emoji, 18) or font_small  # <-- CAMBIATO
-    debug_txt = font_debug.render(f"⚙️ Debug: {debug_status}", True, (255, 255, 255))
+    font_debug_text = pygame.font.Font(font_emoji, 18) or font_small
+    debug_txt = font_debug_text.render(f"⚙️ Debug: {debug_status}", True, (255, 255, 255))
     surf.blit(debug_txt, debug_txt.get_rect(center=debug_btn.center))
     
-    # Tasto D sopra il bottone
-    letter_txt = font_number.render("D", True, (0, 0, 0))
-    surf.blit(letter_txt, (debug_btn.centerx - 7, debug_btn.top - 25))
+    # Tasto D sopra il bottone (centrato)
+    letter_d = font_number.render("D", True, (0, 0, 0))
+    surf.blit(letter_d, (debug_btn.centerx - letter_d.get_width() // 2, debug_btn.top - 25))
     # =======================================================================
     
-    # Istruzioni (spostate più in alto)
+    # ============ AUDIO MODE: Bottone sotto il debug ============
+    audio_btn = pygame.Rect(WIDTH - 160, 165, 150, 35)  # 65px sotto debug
+    audio_color = (50, 200, 50) if audio_enabled else (200, 50, 50)
+    pygame.draw.rect(surf, audio_color, audio_btn, border_radius=8)
+    
+    # ✅ PERSONALIZZAZIONE 1: Icone diverse ON/OFF
+    audio_icon = "🔊" if audio_enabled else "🔇"
+    audio_status = "ON" if audio_enabled else "OFF"
+    
+    # Usa emoji_font per l'icona + font normale per il testo
+    font_audio_icon = emoji_font(18)  # Font emoji
+    font_audio_text = pygame.font.Font(font_emoji, 18) or font_small  # Font testo
+    
+    # Renderizza icona e testo separatamente
+    icon_surf = font_audio_icon.render(audio_icon, True, (255, 255, 255))
+    text_surf = font_audio_text.render(f" Audio: {audio_status}", True, (255, 255, 255))
+    
+    # Calcola posizioni per centrare entrambi
+    total_width = icon_surf.get_width() + text_surf.get_width()
+    start_x = audio_btn.centerx - total_width // 2
+    start_y = audio_btn.centery - max(icon_surf.get_height(), text_surf.get_height()) // 2
+    
+    surf.blit(icon_surf, (start_x, start_y))
+    surf.blit(text_surf, (start_x + icon_surf.get_width(), start_y))
+    
+    # Tasto A sopra il bottone (centrato)
+    letter_a = font_number.render("A", True, (0, 0, 0))
+    surf.blit(letter_a, (audio_btn.centerx - letter_a.get_width() // 2, audio_btn.top - 25))
+    # ==============================================================
+    
+    # Istruzioni
     hint1 = font_small.render("Use numbers/letters or click to select", True, (100, 100, 100))
     surf.blit(hint1, hint1.get_rect(center=(WIDTH//2, HEIGHT - 40)))
     hint2 = font_small.render("Press SPACE to start", True, (100, 100, 100))
     surf.blit(hint2, hint2.get_rect(center=(WIDTH//2, HEIGHT - 20)))
     
-    return shape_buttons, color_buttons, debug_btn  # <-- RESTITUISCE ANCHE debug_btn
+    return shape_buttons, color_buttons, debug_btn, audio_btn
+
+def set_all_sounds_volume(volume):
+    """Imposta il volume di tutti i suoni del gioco"""
+    for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, 
+                S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
+        if snd:
+            snd.set_volume(volume)
 
 def draw_pause_overlay(surf):
     font = pygame.font.SysFont("ubuntumono", 56) or pygame.font.SysFont("Arial", 56) or pygame.font.SysFont(None, 56)
@@ -1199,6 +1236,7 @@ def main():
     waiting_restart  = False
     selecting_shape = False
     debug_mode = False
+    audio_enabled = True
     
     # Selezioni correnti nel menu (quelle evidenziate)
     current_shape_selection = 'random'
@@ -1216,6 +1254,7 @@ def main():
     shape_buttons = []
     color_buttons = []
     debug_btn = pygame.Rect(0, 0, 0, 0)
+    audio_btn = pygame.Rect(0, 0, 0, 0)
     invuln_time, last_pipe = 0, pygame.time.get_ticks()
     game_over_start = 0   # timestamp game-over
 
@@ -1343,6 +1382,10 @@ def main():
                 # Controlla click su debug mode  # <-- NUOVO
                 if debug_btn.collidepoint(log_x, log_y):
                     debug_mode = not debug_mode
+                # Controlla click su audio mode
+                if audio_btn.collidepoint(log_x, log_y):
+                    audio_enabled = not audio_enabled
+                    set_all_sounds_volume(0.5 if audio_enabled else 0.0)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p and playing and not waiting_restart:
                     if not paused:  # Sta per andare in pausa
@@ -1494,6 +1537,12 @@ def main():
                         # Toggle Debug Mode
                         elif event.key == pygame.K_d:
                             debug_mode = not debug_mode
+
+                        # Toggle Audio Mode
+                        elif event.key == pygame.K_a:
+                            audio_enabled = not audio_enabled
+                            set_all_sounds_volume(0.5 if audio_enabled else 0.0)  # ✅ CORRETTO                            
+
                         # Conferma con SPACE
                         elif event.key == pygame.K_SPACE:
                             # Salva le selezioni confermate
@@ -1849,8 +1898,8 @@ def main():
                     cloud.draw(WIN)
                 for cloud in clouds_layer2:
                     cloud.draw(WIN)
-                new_shape_btns, new_color_btns, debug_btn = draw_shape_selection_menu(
-                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode
+                new_shape_btns, new_color_btns, debug_btn, audio_btn = draw_shape_selection_menu(  # <-- MODIFICATO
+                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode, audio_enabled  # <-- AGGIUNTO audio_enabled
                 )
                 shape_buttons = new_shape_btns
                 color_buttons = new_color_btns
