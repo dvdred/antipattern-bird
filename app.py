@@ -201,20 +201,37 @@ def emoji_font(size, scale=None):
         __slots__ = ("_ldr", "_sc")
         def __init__(self, loader, scale):
             self._ldr, self._sc = loader, scale
+            
         def render(self, text, antialias, color, background=None):
-            big = self._ldr.render(text, antialias, color, background)
+            try:
+                big = self._ldr.render(text, antialias, color, background)
+                # ✅ AGGIUNTO: Controlla se il rendering ha prodotto zero width
+                if big.get_width() == 0 or big.get_height() == 0:
+                    raise pygame.error("Zero width/height emoji rendering")
+            except pygame.error:
+                # ✅ FALLBACK: Usa font normale con testo placeholder
+                fallback_font = pygame.font.Font(font_emoji, int(EMOJI_BASE_SIZE * 0.6))
+                # Mappa emoji comuni a caratteri ASCII
+                fallback_map = {
+                    "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
+                    "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
+                    "⚓": "[#]", "→": ">"
+                }
+                fallback_text = fallback_map.get(text, "?")
+                big = fallback_font.render(fallback_text, antialias, color, background)
+            
             if self._sc == 1.0:
                 return big
             new_sz = (int(big.get_width()  * self._sc),
                       int(big.get_height() * self._sc))
             return pygame.transform.smoothscale(big, new_sz)
+            
         # metodi utili, se vuoi: size, metrics, ecc.
         @property
         def size(self):                 # "virtual" size
             return int(EMOJI_BASE_SIZE * self._sc)
 
     return EmojiFont(loader, scale)
-
 def get_pipe_spawn_time(speed, distance):
     """Calcola millisecondi necessari affinché una pipe percorra 'distance' pixel alla velocità 'speed'"""
     # speed = pixel/frame, 60 fps
