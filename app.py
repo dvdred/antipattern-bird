@@ -675,8 +675,8 @@ class SpaghettiPipe(Pipe):
 
     def update(self, speed=3):
         super().update(speed)
-        # Anima le strisce (scrolling diagonale)
-        self.anim_offset = (self.anim_offset + 2) % (self.stripe_width * 2)
+        # Anima le strisce proporzionalmente alla velocità
+        self.anim_offset = (self.anim_offset + speed * 0.67) % (self.stripe_width * 2)
 
     def draw(self, surf, alpha=255):
         """Disegna strisce diagonali animate giallo-rosso (barber pole)"""
@@ -1881,7 +1881,7 @@ def main():
 
             # Aggiorna posizione tubi (fuori dal blocco di collisione)
             for p in pipes[:]:
-                p.update(speed=int(master_speed))
+                p.update(speed=master_speed)
                 if p.x + PIPE_W < 0:
                     pipes.remove(p)
 

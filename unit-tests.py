@@ -462,11 +462,12 @@ class TestSpaghettiPipe(unittest.TestCase):
         initial_offset = pipe.anim_offset
         
         # Simula update con velocità 3 (default)
-        pipe.update(3)
+        speed = 3
+        pipe.update(speed)
         
-        # L'offset dovrebbe essere aumentato di 2
-        expected_offset = (initial_offset + 2) % (pipe.stripe_width * 2)
-        self.assertEqual(pipe.anim_offset, expected_offset)
+        # L'offset dovrebbe essere aumentato di speed * 0.67
+        expected_offset = (initial_offset + speed * 0.67) % (pipe.stripe_width * 2)
+        self.assertAlmostEqual(pipe.anim_offset, expected_offset, places=5)
         
     def test_spaghetti_pipe_animation_wraps(self):
         """Test that animation offset wraps around correctly"""
@@ -476,11 +477,12 @@ class TestSpaghettiPipe(unittest.TestCase):
         pipe.anim_offset = pipe.stripe_width * 2 - 1
         
         # Update dovrebbe far wrappare l'offset
-        pipe.update(3)
+        speed = 3
+        pipe.update(speed)
         
-        # Dovrebbe essere tornato a 1 (wrapping)
-        expected = (pipe.stripe_width * 2 - 1 + 2) % (pipe.stripe_width * 2)
-        self.assertEqual(pipe.anim_offset, expected)
+        # Dovrebbe essere tornato a un valore wrappato (considerando speed * 0.67)
+        expected = (pipe.stripe_width * 2 - 1 + speed * 0.67) % (pipe.stripe_width * 2)
+        self.assertAlmostEqual(pipe.anim_offset, expected, places=5)
         
     def test_spaghetti_pipe_position_update(self):
         """Test that the pipe position updates correctly"""
