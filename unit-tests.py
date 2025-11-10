@@ -40,6 +40,7 @@ class TestGameFilesExist(unittest.TestCase):
             'debt.wav',
             'spaghetti.wav',            
             'mud.wav',
+            'ghost.wav',
             'win.wav',
             'DejaVuSansMono.ttf'
         ]
@@ -253,6 +254,26 @@ class TestDrawDebtIndicator(unittest.TestCase):
 
         surface.blit.assert_called()
 
+class TestDrawSpaghettiActive(unittest.TestCase):
+    """Test per la funzione draw_spaghetti_active"""
+    def test_draw_spaghetti_active_called(self):
+        surface = Mock()
+        remaining_time = 6000  # 6 secondi
+
+        draw_spaghetti_active(surface, remaining_time)
+
+        surface.blit.assert_called()
+
+class TestDrawSpaghettiIndicator(unittest.TestCase):
+    """Test per la funzione draw_spaghetti_indicator"""
+    def test_draw_spaghetti_indicator_called(self):
+        surface = Mock()
+        bird_x, bird_y, bird_size = 100, 100, 20
+
+        draw_spaghetti_indicator(surface, bird_x, bird_y, bird_size)
+
+        surface.blit.assert_called()
+
 class TestDrawDebugInfo(unittest.TestCase):
     def test_draw_debug_info_called(self):
         surface = Mock()
@@ -261,14 +282,14 @@ class TestDrawDebugInfo(unittest.TestCase):
         zebra_active = True
         ice_active = False
         debt_active = True
-        spaghetti_active = False  # <-- AGGIUNTO parametro mancante
+        spaghetti_active = False
         master_speed = 10
         level_timer = 120
         current_gap = 180
         debt_mult = 2
 
         draw_debug_info(surface, base_speed, speed_lvl, zebra_active, ice_active, debt_active,
-                        spaghetti_active,  # <-- AGGIUNTO qui
+                        spaghetti_active,
                         master_speed, level_timer, current_gap, debt_mult)
 
         surface.blit.assert_called()
@@ -325,6 +346,342 @@ class TestDrawWinScreen(unittest.TestCase):
         high_score = 2000
         draw_win_screen(surface, score, high_score)
         surface.blit.assert_called()  # Ora funziona perché surface è un Mock
+
+# ============================================================================
+#                     TEST PER GHOST PIPE (NUOVI)
+# ============================================================================
+
+class TestGhostPipe(unittest.TestCase):
+    """Test per la GhostPipe (Memory test pipe)"""
+    
+    def setUp(self):
+        """Set up test fixtures before each test method."""
+        self.mock_surface = Mock()
+        self.spawn_time = pygame.time.get_ticks()
+        
+    def test_ghost_pipe_initialization(self):
+        """Test che GhostPipe si inizializzi correttamente"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        # Check basic attributes
+        self.assertEqual(pipe.x, 100)
+        self.assertEqual(pipe.text, "")
+        self.assertEqual(pipe.gap, PIPE_GAP)
+        self.assertTrue(pipe.is_ghost)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.color, GHOST_COLOR)
+        self.assertEqual(pipe.spawn_time, self.spawn_time)
+        
+        # Check that it inherits from Pipe
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_ghost_pipe_attributes(self):
+        """Test che GhostPipe abbia gli attributi corretti"""
+        pipe = GhostPipe(200, self.spawn_time)
+        
+        self.assertEqual(pipe.x, 200)
+        self.assertEqual(pipe.gap, PIPE_GAP)
+        self.assertTrue(pipe.is_ghost)
+        self.assertEqual(pipe.color, GHOST_COLOR)
+        self.assertTrue(hasattr(pipe, 'spawn_time'))
+        
+    def test_ghost_pipe_get_alpha_visible(self):
+        """Test che l'alpha sia 76 (30%) nei primi 2 secondi"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        # Subito dopo spawn (0ms)
+        alpha = pipe.get_alpha(self.spawn_time)
+        self.assertEqual(alpha, 76, "Alpha should be 76 (30%) immediately after spawn")
+        
+        # Dopo 1 secondo (1000ms)
+        alpha = pipe.get_alpha(self.spawn_time + 1000)
+        self.assertEqual(alpha, 76, "Alpha should still be 76 after 1 second")
+        
+        # Dopo 1.9 secondi (1900ms)
+        alpha = pipe.get_alpha(self.spawn_time + 1900)
+        self.assertEqual(alpha, 76, "Alpha should still be 76 after 1.9 seconds")
+        
+    def test_ghost_pipe_get_alpha_invisible(self):
+        """Test che l'alpha sia 0 dopo 2 secondi"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        # Esattamente dopo 2 secondi (2000ms)
+        alpha = pipe.get_alpha(self.spawn_time + GHOST_FADE_MS)
+        self.assertEqual(alpha, 0, "Alpha should be 0 after 2 seconds")
+        
+        # Dopo 3 secondi (3000ms)
+        alpha = pipe.get_alpha(self.spawn_time + 3000)
+        self.assertEqual(alpha, 0, "Alpha should be 0 after 3 seconds")
+        
+        # Dopo 10 secondi (10000ms)
+        alpha = pipe.get_alpha(self.spawn_time + 10000)
+        self.assertEqual(alpha, 0, "Alpha should be 0 after 10 seconds")
+        
+    def test_ghost_pipe_fade_transition(self):
+        """Test che il fade avvenga esattamente a GHOST_FADE_MS"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        # Prima del fade
+        alpha_before = pipe.get_alpha(self.spawn_time + GHOST_FADE_MS - 1)
+        self.assertEqual(alpha_before, 76, "Should be visible 1ms before fade")
+        
+        # Dopo il fade
+        alpha_after = pipe.get_alpha(self.spawn_time + GHOST_FADE_MS)
+        self.assertEqual(alpha_after, 0, "Should be invisible at fade time")
+        
+    def test_ghost_pipe_no_collision_damage(self):
+        """Test che GhostPipe non faccia danno (testato tramite attributo is_ghost)"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        # Verifica che is_ghost sia True (usato nel gioco per skippare la collisione)
+        self.assertTrue(pipe.is_ghost)
+        
+    def test_ghost_pipe_can_give_points(self):
+        """Test che GhostPipe possa dare punti se si passa nel gap"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        # La pipe NON dovrebbe essere già passed
+        self.assertFalse(pipe.passed, "Pipe should not be passed initially")
+        
+        # Simula il passaggio
+        pipe.passed = True
+        self.assertTrue(pipe.passed, "Pipe should be marked as passed")
+        
+    def test_ghost_pipe_instantiation_different_positions(self):
+        """Test instantiation con diverse posizioni x"""
+        pipe1 = GhostPipe(0, self.spawn_time)
+        self.assertEqual(pipe1.x, 0)
+        
+        pipe2 = GhostPipe(500, self.spawn_time)
+        self.assertEqual(pipe2.x, 500)
+        
+        pipe3 = GhostPipe(1000, self.spawn_time)
+        self.assertEqual(pipe3.x, 1000)
+        
+    def test_ghost_pipe_draw_method_exists(self):
+        """Test che GhostPipe abbia un metodo draw"""
+        pipe = GhostPipe(100, self.spawn_time)
+        
+        self.assertTrue(hasattr(pipe, 'draw'))
+        self.assertTrue(callable(pipe.draw))
+        
+    def test_ghost_pipe_draw_with_current_time(self):
+        """Test che draw accetti il parametro current_time"""
+        pipe = GhostPipe(100, self.spawn_time)
+        surface = pygame.Surface((WIDTH, HEIGHT))
+        
+        # Chiamata con current_time non dovrebbe sollevare eccezioni
+        try:
+            pipe.draw(surface, alpha=255, current_time=self.spawn_time)
+            success = True
+        except Exception as e:
+            success = False
+            print(f"Exception raised: {e}")
+            
+        self.assertTrue(success, "draw() with current_time raised an exception")
+        
+    def test_ghost_pipe_inheritance(self):
+        """Test che GhostPipe erediti correttamente da Pipe"""
+        pipe = GhostPipe(50, self.spawn_time)
+        
+        # Check essential attributes from Pipe
+        self.assertTrue(hasattr(pipe, 'x'))
+        self.assertTrue(hasattr(pipe, 'gap'))
+        self.assertTrue(hasattr(pipe, 'text'))
+        self.assertTrue(hasattr(pipe, 'is_ghost'))
+        self.assertTrue(hasattr(pipe, 'passed'))
+        self.assertTrue(hasattr(pipe, 'color'))
+        
+    def test_ghost_pipe_collide_returns_true(self):
+        """Test che collide() funzioni anche per GhostPipe (anche se il danno viene ignorato)"""
+        pipe = GhostPipe(100, self.spawn_time)
+        bird = Mock()
+        bird.get_rect.return_value = pygame.Rect(100, 50, 20, 20)  # Collide with top
+        
+        # collide() dovrebbe funzionare (anche se il gioco ignora il risultato per is_ghost)
+        result = pipe.collide(bird)
+        self.assertTrue(result, "collide() should still detect collision for Ghost pipe")
+
+class TestGhostPipeConstants(unittest.TestCase):
+    """Test per le costanti relative a GhostPipe"""
+    
+    def test_ghost_points_constant(self):
+        """Test che GHOST_POINTS sia definito correttamente"""
+        self.assertEqual(GHOST_POINTS, 3)
+        
+    def test_ghost_fade_ms_constant(self):
+        """Test che GHOST_FADE_MS sia definito correttamente"""
+        self.assertEqual(GHOST_FADE_MS, 2_000)  # 2 secondi
+        
+    def test_ghost_spawn_time_constants(self):
+        """Test che i tempi di spawn siano definiti correttamente"""
+        self.assertEqual(GHOST_MIN_MS, 40_000)   # 40 secondi
+        self.assertEqual(GHOST_MAX_MS, 45_000)   # 45 secondi
+        
+    def test_ghost_color_constant(self):
+        """Test che GHOST_COLOR sia definito correttamente"""
+        self.assertEqual(GHOST_COLOR, (200, 200, 255))  # Azzurro pallido
+
+# ============================================================================
+#                     TEST PER ALTRE PIPE SPECIALI
+# ============================================================================
+
+class TestRainbowPipe(unittest.TestCase):
+    """Test per la RainbowPipe"""
+    
+    def test_rainbow_pipe_initialization(self):
+        """Test che RainbowPipe si inizializzi correttamente"""
+        pipe = RainbowPipe(100, gap=180)
+        
+        self.assertEqual(pipe.x, 100)
+        self.assertEqual(pipe.gap, 180)
+        self.assertTrue(pipe.is_rainbow)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.rainbow, RAINBOW_COLORS)
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_rainbow_pipe_has_six_colors(self):
+        """Test che RainbowPipe abbia 6 colori"""
+        pipe = RainbowPipe(100)
+        
+        self.assertEqual(len(pipe.rainbow), 6)
+        self.assertEqual(len(RAINBOW_COLORS), 6)
+        
+    def test_rainbow_points_constant(self):
+        """Test che RAINBOW_POINTS sia definito"""
+        self.assertEqual(RAINBOW_POINTS, 3)
+
+class TestZebraPipe(unittest.TestCase):
+    """Test per la ZebraPipe"""
+    
+    def test_zebra_pipe_initialization(self):
+        """Test che ZebraPipe si inizializzi correttamente"""
+        pipe = ZebraPipe(100, gap=180)
+        
+        self.assertEqual(pipe.x, 100)
+        self.assertEqual(pipe.gap, 180)
+        self.assertTrue(pipe.is_zebra)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.colors, ZEBRA_COLORS)
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_zebra_pipe_has_two_colors(self):
+        """Test che ZebraPipe abbia 2 colori (bianco e nero)"""
+        pipe = ZebraPipe(100)
+        
+        self.assertEqual(len(pipe.colors), 2)
+        self.assertEqual(ZEBRA_COLORS[0], (0, 0, 0))      # Nero
+        self.assertEqual(ZEBRA_COLORS[1], (255, 255, 255)) # Bianco
+        
+    def test_zebra_duration_constant(self):
+        """Test che ZEBRA_DURATION_MS sia definito"""
+        self.assertEqual(ZEBRA_DURATION_MS, 8_000)  # 8 secondi
+        
+    def test_zebra_speed_multiplier_constant(self):
+        """Test che SPEED_MULTIPLIER sia definito"""
+        self.assertEqual(SPEED_MULTIPLIER, 1.5)
+
+class TestGoldenPipe(unittest.TestCase):
+    """Test per la GoldenPipe"""
+    
+    def test_golden_pipe_initialization(self):
+        """Test che GoldenPipe si inizializzi correttamente"""
+        pipe = GoldenPipe(100)
+        
+        self.assertEqual(pipe.x, 100)
+        self.assertTrue(pipe.is_golden)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.color, (255, 215, 0))  # Oro
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_golden_pipe_gives_life(self):
+        """Test che GoldenPipe sia marcata per dare vita (verificato tramite is_golden)"""
+        pipe = GoldenPipe(100)
+        
+        self.assertTrue(pipe.is_golden)
+        
+    def test_golden_spawn_time_constants(self):
+        """Test che i tempi di spawn siano definiti correttamente"""
+        self.assertEqual(GOLDEN_MIN_MS, 180_000)  # 3 minuti
+        self.assertEqual(GOLDEN_MAX_MS, 210_000)  # 3.5 minuti
+
+class TestIcePipe(unittest.TestCase):
+    """Test per la IcePipe"""
+    
+    def test_ice_pipe_initialization(self):
+        """Test che IcePipe si inizializzi correttamente"""
+        pipe = IcePipe(100)
+        
+        self.assertEqual(pipe.x, 100)
+        self.assertTrue(pipe.is_ice)
+        self.assertEqual(pipe.color, (173, 216, 230))  # Light blue
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_ice_spawn_time_constants(self):
+        """Test che i tempi di spawn siano definiti correttamente"""
+        self.assertEqual(ICE_MIN_MS, 30_000)  # 30 secondi
+        self.assertEqual(ICE_MAX_MS, 60_000)  # 60 secondi
+
+class TestLegacyPipe(unittest.TestCase):
+    """Test per la LegacyPipe"""
+    
+    def test_legacy_pipe_initialization(self):
+        """Test che LegacyPipe si inizializzi correttamente"""
+        pipe = LegacyPipe(100, base_gap=180)
+        
+        self.assertEqual(pipe.x, 100)
+        self.assertTrue(pipe.is_legacy)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.color, (101, 67, 33))  # Marrone scuro
+        self.assertEqual(pipe.gap, 180 - LEGACY_GAP_REDUCTION)
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_legacy_pipe_reduced_gap(self):
+        """Test che LegacyPipe abbia gap ridotto"""
+        base_gap = 180
+        pipe = LegacyPipe(100, base_gap=base_gap)
+        
+        expected_gap = base_gap - LEGACY_GAP_REDUCTION
+        self.assertEqual(pipe.gap, expected_gap)
+        self.assertLess(pipe.gap, base_gap)
+        
+    def test_legacy_points_constant(self):
+        """Test che LEGACY_POINTS sia definito"""
+        self.assertEqual(LEGACY_POINTS, 4)
+        
+    def test_legacy_gap_reduction_constant(self):
+        """Test che LEGACY_GAP_REDUCTION sia definito"""
+        self.assertEqual(LEGACY_GAP_REDUCTION, 25)
+
+class TestTechnicalDebtPipe(unittest.TestCase):
+    """Test per la TechnicalDebtPipe"""
+    
+    def test_debt_pipe_initialization(self):
+        """Test che TechnicalDebtPipe si inizializzi correttamente"""
+        pipe = TechnicalDebtPipe(100, base_gap=180)
+        
+        self.assertEqual(pipe.x, 100)
+        self.assertTrue(pipe.is_debt)
+        self.assertFalse(pipe.passed)
+        self.assertEqual(pipe.color, (64, 64, 64))  # Grigio scuro
+        self.assertEqual(pipe.gap, 180)
+        self.assertIsInstance(pipe, Pipe)
+        
+    def test_debt_points_constant(self):
+        """Test che DEBT_POINTS sia definito"""
+        self.assertEqual(DEBT_POINTS, 5)
+        
+    def test_debt_duration_constant(self):
+        """Test che DEBT_DURATION_MS sia definito"""
+        self.assertEqual(DEBT_DURATION_MS, 8_000)  # 8 secondi
+        
+    def test_debt_gravity_mult_constant(self):
+        """Test che DEBT_GRAVITY_MULT sia definito"""
+        self.assertEqual(DEBT_GRAVITY_MULT, 1.2)  # +20% gravità
+
+# ============================================================================
+#                     TEST ESISTENTI (MANTENUTI)
+# ============================================================================
 
 class TestBigBallOfMudPipe(unittest.TestCase):
     def setUp(self):
@@ -611,6 +968,126 @@ class TestBirdInvertedGravity(unittest.TestCase):
         # La velocità dovrebbe essere clampata tra -10 e 10
         self.assertGreaterEqual(bird.vel, -10)
         self.assertLessEqual(bird.vel, 10)
+
+# ============================================================================
+#                     TEST PER FUNZIONI UTILITY
+# ============================================================================
+
+class TestGetPipeSpawnTime(unittest.TestCase):
+    """Test per la funzione get_pipe_spawn_time"""
+    
+    def test_get_pipe_spawn_time_normal(self):
+        """Test calcolo tempo di spawn con valori normali"""
+        speed = 3  # pixel/frame
+        distance = 300  # pixel
+        
+        result = get_pipe_spawn_time(speed, distance)
+        
+        # Expected: (300 / 3) * (1000 / 60) = 100 * 16.666... = 1666.666... ms
+        expected = int((distance / speed) * 1000 / 60)
+        self.assertEqual(result, expected)
+        
+    def test_get_pipe_spawn_time_zero_speed(self):
+        """Test fallback quando velocità è 0"""
+        result = get_pipe_spawn_time(0, 300)
+        
+        self.assertEqual(result, 1500, "Should return fallback value of 1500ms")
+        
+    def test_get_pipe_spawn_time_negative_speed(self):
+        """Test fallback quando velocità è negativa"""
+        result = get_pipe_spawn_time(-5, 300)
+        
+        self.assertEqual(result, 1500, "Should return fallback value of 1500ms")
+
+# ============================================================================
+#                     TEST PER FINISH LINE
+# ============================================================================
+
+class TestFinishLine(unittest.TestCase):
+    """Test per la FinishLine"""
+    
+    def test_finish_line_initialization(self):
+        """Test che FinishLine si inizializzi correttamente"""
+        finish_line = FinishLine(400)
+        
+        self.assertEqual(finish_line.x, 400)
+        self.assertEqual(finish_line.width, 40)
+        self.assertEqual(finish_line.checker_size, 25)
+        self.assertTrue(finish_line.is_finish)
+        
+    def test_finish_line_update(self):
+        """Test che FinishLine si muova correttamente"""
+        finish_line = FinishLine(400)
+        initial_x = finish_line.x
+        speed = 5
+        
+        finish_line.update(speed)
+        
+        self.assertEqual(finish_line.x, initial_x - speed)
+        
+    def test_finish_line_touches_bird_true(self):
+        """Test che touches_bird rilevi correttamente la collisione"""
+        finish_line = FinishLine(100)
+        bird = Bird()
+        bird.x = 100
+        bird.y = 100
+        bird.size = 20
+        
+        # Il bird dovrebbe toccare la finish line
+        result = finish_line.touches_bird(bird)
+        self.assertTrue(result)
+        
+    def test_finish_line_touches_bird_false(self):
+        """Test che touches_bird rilevi correttamente quando non c'è collisione"""
+        finish_line = FinishLine(500)
+        bird = Bird()
+        bird.x = 100
+        bird.y = 100
+        bird.size = 20
+        
+        # Il bird NON dovrebbe toccare la finish line
+        result = finish_line.touches_bird(bird)
+        self.assertFalse(result)
+
+# ============================================================================
+#                     TEST PER PARTICLE
+# ============================================================================
+
+class TestParticle(unittest.TestCase):
+    """Test per la classe Particle"""
+    
+    def test_particle_initialization(self):
+        """Test che Particle si inizializzi correttamente"""
+        particle = Particle(100, 100, (255, 0, 0))
+        
+        self.assertEqual(particle.x, 100)
+        self.assertEqual(particle.y, 100)
+        self.assertEqual(particle.color, (255, 0, 0))
+        self.assertEqual(particle.life, 30)
+        self.assertIsNotNone(particle.vx)
+        self.assertIsNotNone(particle.vy)
+        
+    def test_particle_update_decreases_life(self):
+        """Test che update() diminuisca la vita della particella"""
+        particle = Particle(100, 100)
+        initial_life = particle.life
+        
+        particle.update()
+        
+        self.assertEqual(particle.life, initial_life - 1)
+        
+    def test_particle_update_changes_position(self):
+        """Test che update() cambi la posizione della particella"""
+        particle = Particle(100, 100)
+        particle.vx = 2
+        particle.vy = -1
+        initial_x = particle.x
+        initial_y = particle.y
+        
+        particle.update()
+        
+        self.assertEqual(particle.x, initial_x + 2)
+        self.assertEqual(particle.y, initial_y - 1)
 
 if __name__ == '__main__':
     unittest.main()

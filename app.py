@@ -35,6 +35,7 @@ legacy_sound    = get_resource_path('legacy.wav')
 debt_sound      = get_resource_path('debt.wav')
 spaghetti_sound = get_resource_path('spaghetti.wav')
 mud_sound       = get_resource_path('mud.wav')
+ghost_sound     = get_resource_path('ghost.wav')
 win_sound       = get_resource_path('win.wav')
 font_emoji      = get_resource_path('DejaVuSansMono.ttf')
 font_emoji_ext  = get_resource_path('NotoColorEmoji.ttf')
@@ -58,9 +59,10 @@ S_LEGACY = pygame.mixer.Sound(legacy_sound)
 S_DEBT = pygame.mixer.Sound(debt_sound)
 S_SPAGHETTI = pygame.mixer.Sound(spaghetti_sound)
 S_MUD = pygame.mixer.Sound(mud_sound)
+S_GHOST = pygame.mixer.Sound(ghost_sound)
 S_WIN = pygame.mixer.Sound(win_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_GHOST, S_WIN):
     if snd:
         snd.set_volume(0.5)
 
@@ -152,6 +154,13 @@ MUD_PIPE_W        = 110              # larghezza pipe
 MUD_GAP           = 110               # altezza singolo gap
 MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
                      (255, 215, 0)]   # giallo    (come Golden)
+
+# ---------- GHOST PIPE (Memory test) ----------
+GHOST_MIN_MS = 40_000        # 40 secondi
+GHOST_MAX_MS = 45_000        # 45 secondi
+GHOST_POINTS = 3
+GHOST_FADE_MS = 2_000        # Diventa invisibile dopo 2 secondi
+GHOST_COLOR = (200, 200, 255)  # Azzurro pallido
 
 # ---------- LEVEL TIMEs ----------
 LVL2_TIME = 90_000
@@ -820,6 +829,81 @@ class BigBallOfMudPipe(Pipe):
                         HEIGHT - self.height - MUD_GAP - 50)
         return b.colliderect(t) or b.colliderect(bo)
 
+class GhostPipe(Pipe):
+    """Pipe fantasma che diventa invisibile dopo 2s ma rimane solida"""
+    def __init__(self, x, spawn_time):
+        super().__init__(x, text="", gap=PIPE_GAP)
+        self.color = GHOST_COLOR
+        self.is_ghost = True
+        self.passed = False
+        self.spawn_time = spawn_time
+        
+    def get_alpha(self, current_time):
+        """Calcola trasparenza in base al tempo trascorso dallo spawn"""
+        elapsed = current_time - self.spawn_time
+        if elapsed < GHOST_FADE_MS:
+            return 76  # 30% di 255 = semi-trasparente
+        else:
+            return 0   # Invisibile
+    
+    def draw(self, surf, alpha=255, current_time=0):
+        """Disegna con trasparenza dinamica e bordo tratteggiato"""
+        actual_alpha = self.get_alpha(current_time) if current_time > 0 else alpha
+        
+        bot_h = HEIGHT - self.height - self.gap - 50
+        
+        # Riempimento semi-trasparente
+        top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        top.fill((*self.color, actual_alpha))
+        surf.blit(top, (self.x, 0))
+        
+        bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        bottom.fill((*self.color, actual_alpha))
+        surf.blit(bottom, (self.x, self.height + self.gap))
+        
+        # Bordo tratteggiato (solo quando visibile)
+        if actual_alpha > 10:
+            dash_length = 10
+            # Bordi superiori
+            for y in range(0, self.height, dash_length * 2):
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x, y), (self.x, min(y + dash_length, self.height)), 2)
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x + PIPE_W, y), (self.x + PIPE_W, min(y + dash_length, self.height)), 2)
+            
+            # Bordi inferiori
+            bot_y_start = self.height + self.gap
+            for y in range(0, bot_h, dash_length * 2):
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x, bot_y_start + y), 
+                               (self.x, bot_y_start + min(y + dash_length, bot_h)), 2)
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x + PIPE_W, bot_y_start + y), 
+                               (self.x + PIPE_W, bot_y_start + min(y + dash_length, bot_h)), 2)
+        
+        # Testo "GHOST" (solo quando abbastanza visibile)
+        if actual_alpha > 30:
+            font_small = pygame.font.SysFont("ubuntumono", 22) or pygame.font.SysFont(None, 22)
+            lines = ["GH", "OS", "T"]
+            line_h = 22
+            
+            # Parte superiore
+            start_y = max(5, (self.height - len(lines) * line_h) // 2)
+            for i, line in enumerate(lines):
+                y_pos = start_y + i * line_h
+                if y_pos + line_h <= self.height - 5:
+                    txt = font_small.render(line, True, (255, 255, 255))
+                    surf.blit(txt, (self.x + (PIPE_W - txt.get_width()) // 2, y_pos))
+            
+            # Parte inferiore
+            start_y_bot = max(5, (bot_h - len(lines) * line_h) // 2)
+            for i, line in enumerate(lines):
+                y_pos = start_y_bot + i * line_h
+                if y_pos + line_h <= bot_h - 5:
+                    txt = font_small.render(line, True, (255, 255, 255))
+                    surf.blit(txt, (self.x + (PIPE_W - txt.get_width()) // 2, 
+                                   self.height + self.gap + y_pos))
+
 class FinishLine:
     """Traguardo a scacchi che appare prima della vittoria"""
     def __init__(self, x):
@@ -1100,7 +1184,7 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
 def set_all_sounds_volume(volume):
     """Imposta il volume di tutti i suoni del gioco"""
     for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, 
-                S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
+                S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_GHOST, S_WIN):
         if snd:
             snd.set_volume(volume)
 
@@ -1295,6 +1379,7 @@ def main():
     debt_next      = pygame.time.get_ticks() + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
     mud_next       = pygame.time.get_ticks() + random.randint(MUD_MIN_MS, MUD_MAX_MS)
     spaghetti_next = pygame.time.get_ticks() + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
+    ghost_next     = pygame.time.get_ticks() + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -1487,6 +1572,7 @@ def main():
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                             spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                             mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+                            ghost_next = now + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             ice_until = 0                                                      # <-- AGGIUNTO
@@ -1608,6 +1694,7 @@ def main():
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                             spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                             mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+                            ghost_next = now + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             ice_until = 0                                                      # <-- AGGIUNTO
@@ -1771,6 +1858,9 @@ def main():
                 elif now >= mud_next:
                     pipes.append(BigBallOfMudPipe(WIDTH))
                     mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+                elif now >= ghost_next:
+                    pipes.append(GhostPipe(WIDTH, now))
+                    ghost_next = now + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
                 else:
                     pipes.append(Pipe(WIDTH, gap=current_gap))
 
@@ -1779,7 +1869,8 @@ def main():
 
                 # 1. Collisione con i tubi
                 for p in pipes[:]:
-                    if p.collide(bird):
+                    # Ghost pipe NON fa danno
+                    if not getattr(p, 'is_ghost', False) and p.collide(bird):
                         collided_this_frame = True
                         break
                 
@@ -1857,6 +1948,10 @@ def main():
                                 pts = SPAGHETTI_POINTS
                                 spaghetti_until = now + SPAGHETTI_DURATION_MS
                                 S_SPAGHETTI.play()
+                                flash_until = now + FLASH_MS
+                            elif getattr(p, 'is_ghost', False):
+                                pts = GHOST_POINTS
+                                S_GHOST.play()
                                 flash_until = now + FLASH_MS                            
                             else:
                                 S_POINT.play()
@@ -1938,7 +2033,10 @@ def main():
                 cloud.draw(WIN)
                 
             for p in pipes:
-                p.draw(WIN)
+                if getattr(p, 'is_ghost', False):
+                    p.draw(WIN, current_time=now)
+                else:
+                    p.draw(WIN)
             if finish_line:
                finish_line.draw(WIN)
             bird.draw(WIN)
