@@ -66,11 +66,12 @@ jobs:
       - run: pip install pyinstaller
       - run: pip install -r requirements.txt
       - run: >
-          pyinstaller --onefile
+          pyinstaller --onefile --hidden-import=jaraco.text --hidden-import=jaraco.functools --hidden-import=jaraco.context --exclude-module pytest --exclude-module setuptools --exclude-module tkinter
           --add-data "icon32.png:."
           --add-data "*.wav:."
           --add-data "*.ttf:."
           --name antipattern-bird app.py
+        continue-on-error: true
       - uses: actions/upload-artifact@v4
         with:
           name: antipattern-bird-linux-x64

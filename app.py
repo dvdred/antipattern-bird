@@ -23,20 +23,21 @@ def get_resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-icon_path      = get_resource_path('icon32.png')
-jump_sound     = get_resource_path('jump.wav')
-point_sound    = get_resource_path('point.wav')
-rainbow_sound  = get_resource_path('rainbow.wav')
-lifeup_sound   = get_resource_path('lifeup.wav')
-lifedown_sound = get_resource_path('lifedown.wav')
-golden_sound   = get_resource_path('golden.wav')
-ice_sound      = get_resource_path('ice.wav')
-legacy_sound   = get_resource_path('legacy.wav')
-debt_sound     = get_resource_path('debt.wav')
-mud_sound      = get_resource_path('mud.wav')
-win_sound      = get_resource_path('win.wav')
-font_emoji     = get_resource_path('DejaVuSansMono.ttf')
-font_emoji_ext = get_resource_path('NotoColorEmoji.ttf')
+icon_path       = get_resource_path('icon32.png')
+jump_sound      = get_resource_path('jump.wav')
+point_sound     = get_resource_path('point.wav')
+rainbow_sound   = get_resource_path('rainbow.wav')
+lifeup_sound    = get_resource_path('lifeup.wav')
+lifedown_sound  = get_resource_path('lifedown.wav')
+golden_sound    = get_resource_path('golden.wav')
+ice_sound       = get_resource_path('ice.wav')
+legacy_sound    = get_resource_path('legacy.wav')
+debt_sound      = get_resource_path('debt.wav')
+spaghetti_sound = get_resource_path('spaghetti.wav')
+mud_sound       = get_resource_path('mud.wav')
+win_sound       = get_resource_path('win.wav')
+font_emoji      = get_resource_path('DejaVuSansMono.ttf')
+font_emoji_ext  = get_resource_path('NotoColorEmoji.ttf')
 
 # ---------- config ----------
 EMOJI_SCALE = 0.25          # 1.0 = nativo, 0.25 → 1/4, 1.5 → +50 %
@@ -55,10 +56,11 @@ S_GOLDEN = pygame.mixer.Sound(golden_sound)
 S_ICE = pygame.mixer.Sound(ice_sound)
 S_LEGACY = pygame.mixer.Sound(legacy_sound)
 S_DEBT = pygame.mixer.Sound(debt_sound)
+S_SPAGHETTI = pygame.mixer.Sound(spaghetti_sound)
 S_MUD = pygame.mixer.Sound(mud_sound)
 S_WIN = pygame.mixer.Sound(win_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_MUD, S_WIN):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
     if snd:
         snd.set_volume(0.5)
 
@@ -115,7 +117,7 @@ SPEED_MULTIPLIER = 1.5
 ZEBRA_POINTS_MULT = 2
 
 # ---------- GOLDEN PIPE ----------
-GOLDEN_MIN_MS = 150_000          # 2,5 minuti (raro)
+GOLDEN_MIN_MS = 180_000          # 3 minuti (raro)
 GOLDEN_MAX_MS = 210_000          # 3,5 minuti
 
 # ---------- ICE PIPE ----------
@@ -129,14 +131,21 @@ LEGACY_POINTS = 4
 LEGACY_GAP_REDUCTION = 25
 
 # ---------- TECHNICAL DEBT PIPE ----------
-DEBT_MIN_MS = 45_000         # 45 secondi
-DEBT_MAX_MS = 70_000         # 70 secondi
+DEBT_MIN_MS = 50_000         # 50 secondi
+DEBT_MAX_MS = 70_000         # 75 secondi
 DEBT_POINTS = 5              # Moltiplicato per livello
 DEBT_DURATION_MS = 8_000     # 8 secondi
 DEBT_GRAVITY_MULT = 1.2      # +20% gravità
 
+# ---------- SPAGHETTI CODE PIPE ----------
+SPAGHETTI_MIN_MS = 75_000       # 70 secondi
+SPAGHETTI_MAX_MS = 100_000       # 65 secondi
+SPAGHETTI_POINTS = 7
+SPAGHETTI_DURATION_MS = 6_000    # 6 secondi di effetto
+SPAGHETTI_COLORS = [(255, 215, 0), (255, 0, 0)]  # giallo e rosso
+
 # ---------- BIG BALL OF MUD PIPE (mini-boss) ----------
-MUD_MIN_MS        = 110_000          # 3,5 min
+MUD_MIN_MS        = 115_000          # 3,5 min
 MUD_MAX_MS        = 115_000          # fissa (può rimanere random se vuoi)
 MUD_POINTS        = 15
 MUD_PIPE_W        = 110              # larghezza pipe
@@ -154,6 +163,7 @@ GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
 DEBUG_MODE = False
+AUDIO_ENABLED = True
 FLASH_MS = 150
 FLASH_COLOR = (255,255,255)
 
@@ -162,15 +172,15 @@ TEXT_LIST = [
 "Stovepipe_System", "Smoke_and_Mirrors", "Mushroom_Management",
 "Death_March", "Elephant_in_the_Room", "Boat_Anchor", "Busy_Waiting",
 "Action_at_a_Distance", "Caching_Failure", "Accumulate_and_Fire",
-"Code_Smell", "Lava_Flow", "Accidental_Complexity", "Ball_of_Mud",
+"Code_Smell", "Lava_Flow", "Accidental_Complexity",
 "Blind_Faith", "Code_Momentum", "DLL_Hell", "Vendor_Lock-in",
 "Input_Kludge", "Double-Checked_Locking", "Interface_Bloat",
 "Continuous_Obsolescence", "Abstraction_Inversion", "Kitchen_Sink",
 "Magic_Number", "God_Object", "Premature_Optimization", "Poltergeist",
 "Feature_Creep", "Yo-Yo_Problem", "Cargo_Cult_Programming",
 "Copy_and_Paste_Programming", "Magic_Pushbutton", "Ambiguous_Viewpoint",
-"Reinventing_the_wheel", "Reinventing_the_Square_Wheel", "Fencepost",
-"Software_Bloat", "Spaghetti_Code", "Hard_Code", "Soft_Code", "Dead_End"
+"Reinventing_the_wheel", "Reinventing_Square_Wheel", "Fencepost",
+"Software_Bloat", "Hard_Code", "Soft_Code", "Dead_End"
 ]
 
 def emoji_font(size, scale=None):
@@ -191,20 +201,37 @@ def emoji_font(size, scale=None):
         __slots__ = ("_ldr", "_sc")
         def __init__(self, loader, scale):
             self._ldr, self._sc = loader, scale
+            
         def render(self, text, antialias, color, background=None):
-            big = self._ldr.render(text, antialias, color, background)
+            try:
+                big = self._ldr.render(text, antialias, color, background)
+                # ✅ AGGIUNTO: Controlla se il rendering ha prodotto zero width
+                if big.get_width() == 0 or big.get_height() == 0:
+                    raise pygame.error("Zero width/height emoji rendering")
+            except pygame.error:
+                # ✅ FALLBACK: Usa font normale con testo placeholder
+                fallback_font = pygame.font.Font(font_emoji, int(EMOJI_BASE_SIZE * 0.6))
+                # Mappa emoji comuni a caratteri ASCII
+                fallback_map = {
+                    "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
+                    "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
+                    "⚓": "[#]", "→": ">"
+                }
+                fallback_text = fallback_map.get(text, "?")
+                big = fallback_font.render(fallback_text, antialias, color, background)
+            
             if self._sc == 1.0:
                 return big
             new_sz = (int(big.get_width()  * self._sc),
                       int(big.get_height() * self._sc))
             return pygame.transform.smoothscale(big, new_sz)
+            
         # metodi utili, se vuoi: size, metrics, ecc.
         @property
         def size(self):                 # "virtual" size
             return int(EMOJI_BASE_SIZE * self._sc)
 
     return EmojiFont(loader, scale)
-
 def get_pipe_spawn_time(speed, distance):
     """Calcola millisecondi necessari affinché una pipe percorra 'distance' pixel alla velocità 'speed'"""
     # speed = pixel/frame, 60 fps
@@ -321,14 +348,28 @@ class Bird:
         self.x = 50
         self.y, self.vel = HEIGHT // 2, 0
 
-    def jump(self):
-        self.vel = JUMP
+    def jump(self, inverted=False):
+        if inverted:
+            self.vel = -JUMP  # +6 (spinge giù, simmetrico al normale)
+        else:
+            self.vel = JUMP   # -6 (spinge su)
         if S_JUMP:
             S_JUMP.play()
 
-    def update(self, gravity_mult=1.0):
-        self.vel += GRAVITY * gravity_mult
+    def update(self, gravity_mult=1.0, inverted=False):
+        if inverted:
+            # Gravità invertita con stessa intensità (solo segno opposto)
+            gravity = -GRAVITY # -0.25
+        else:
+            gravity = GRAVITY * gravity_mult   # +0.25 (normale)
+        
+        self.vel += gravity
+        
+        # Limita velocità massima (uguale per entrambe le direzioni)
+        self.vel = max(-10, min(10, self.vel))
+        
         self.y += self.vel
+        
         if self.y < 0:
             self.y, self.vel = 0, 0
         if self.y > HEIGHT - 50 - self.size:
@@ -620,7 +661,88 @@ class TechnicalDebtPipe(Pipe):
         
         # Top center
         rect = icon.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
-        surf.blit(icon, rect)        
+        surf.blit(icon, rect)
+
+class SpaghettiPipe(Pipe):
+    """Pipe con strisce diagonali tipo barber pole che inverte controlli e gravità"""
+    def __init__(self, x):
+        super().__init__(x, text="", gap=PIPE_GAP)
+        self.colors = SPAGHETTI_COLORS
+        self.is_spaghetti = True
+        self.passed = False
+        self.stripe_width = 15  # larghezza strisce diagonali
+        self.anim_offset = 0    # offset animazione
+
+    def update(self, speed=3):
+        super().update(speed)
+        # Anima le strisce proporzionalmente alla velocità
+        self.anim_offset = (self.anim_offset + speed * 0.67) % (self.stripe_width * 2)
+
+    def draw(self, surf, alpha=255):
+        """Disegna strisce diagonali animate giallo-rosso (barber pole)"""
+        bot_h = HEIGHT - self.height - self.gap - 50
+
+        # ===== PARTE SUPERIORE =====
+        top_surf = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        for y in range(0, self.height + PIPE_W, self.stripe_width):
+            for x in range(-PIPE_W, PIPE_W, self.stripe_width):
+                # Disegna strisce diagonali con offset animato
+                points = [
+                    (x + self.anim_offset, y),
+                    (x + self.stripe_width + self.anim_offset, y),
+                    (x + self.stripe_width + self.anim_offset, y + self.stripe_width),
+                    (x + self.anim_offset, y + self.stripe_width)
+                ]
+                # Alterna colori
+                color_idx = ((x + y) // self.stripe_width) % 2
+                color = (*self.colors[color_idx], alpha)
+                pygame.draw.polygon(top_surf, color, points)
+        
+        surf.blit(top_surf, (self.x, 0))
+
+        # ===== PARTE INFERIORE =====
+        bot_surf = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        for y in range(0, bot_h + PIPE_W, self.stripe_width):
+            for x in range(-PIPE_W, PIPE_W, self.stripe_width):
+                points = [
+                    (x + self.anim_offset, y),
+                    (x + self.stripe_width + self.anim_offset, y),
+                    (x + self.stripe_width + self.anim_offset, y + self.stripe_width),
+                    (x + self.anim_offset, y + self.stripe_width)
+                ]
+                color_idx = ((x + y) // self.stripe_width) % 2
+                color = (*self.colors[color_idx], alpha)
+                pygame.draw.polygon(bot_surf, color, points)
+        
+        surf.blit(bot_surf, (self.x, self.height + self.gap))
+
+        # ===== BORDO NERO =====
+        pygame.draw.rect(surf, (0, 0, 0), (self.x-2, -2, PIPE_W+4, self.height+4), 2)
+        pygame.draw.rect(surf, (0, 0, 0), (self.x-2, self.height+self.gap-2, PIPE_W+4, bot_h+4), 2)
+
+        # ===== EMOJI SPAGHETTI (solo sopra) =====
+        font_big = emoji_font(36)
+        icon = font_big.render("🍝", True, (0, 0, 0))
+        
+        # Top center
+        rect = icon.get_rect(center=(self.x + PIPE_W // 2, self.height // 2))
+        surf.blit(icon, rect)
+        
+        # ===== TESTO "SPAGHETTI_CODE" (solo sotto) =====
+        font_small = pygame.font.SysFont("ubuntumono", 22) or pygame.font.SysFont("Arial", 22) or pygame.font.SysFont(None, 22)
+        lines = ["SP", "AG", "HE", "TT", "I_", "CO", "DE"]
+        total_h = len(lines) * 20
+
+        # Disegna nella parte inferiore
+        start_y_bot = max(5, (bot_h - total_h) // 2)
+        for i, line in enumerate(lines):
+            y_line = start_y_bot + i * 20
+            if y_line + 20 > bot_h - 5:
+                continue
+            txt = font_small.render(line, True, (0, 0, 0))  # nero per contrasto
+            x_txt = self.x + (PIPE_W - txt.get_width()) // 2
+            if txt.get_width() <= PIPE_W - 4:
+                surf.blit(txt, (x_txt, self.height + self.gap + y_line))      
 
 class BigBallOfMudPipe(Pipe):
     def __init__(self, x):
@@ -690,6 +812,13 @@ class BigBallOfMudPipe(Pipe):
             txt_surface = font_txt.render(line, True, (255, 0, 0))
             surf.blit(txt_surface,
                       (self.x + (MUD_PIPE_W - txt_surface.get_width()) // 2, yy))
+    def collide(self, bird):
+        """Override per usare MUD_PIPE_W invece di PIPE_W"""
+        b  = bird.get_rect()
+        t  = pygame.Rect(self.x, 0, MUD_PIPE_W, self.height)
+        bo = pygame.Rect(self.x, self.height + MUD_GAP, MUD_PIPE_W,
+                        HEIGHT - self.height - MUD_GAP - 50)
+        return b.colliderect(t) or b.colliderect(bo)
 
 class FinishLine:
     """Traguardo a scacchi che appare prima della vittoria"""
@@ -798,7 +927,7 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     pygame.draw.rect(surf, (70, 130, 180), btn, border_radius=10)
     surf.blit(inst, inst.get_rect(center=btn.center))
 
-def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode):
+def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode, audio_enabled):
     surf.fill(bg_color)
     
     font_title = pygame.font.SysFont("ubuntumono", 40, bold=True) or pygame.font.SysFont(None, 40)
@@ -921,23 +1050,59 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
     pygame.draw.rect(surf, debug_color, debug_btn, border_radius=8)
     
     debug_status = "ON" if debug_mode else "OFF"
-    # Usa il font emoji come per i cuori
-    font_debug = pygame.font.Font(font_emoji, 18) or font_small  # <-- CAMBIATO
-    debug_txt = font_debug.render(f"⚙️ Debug: {debug_status}", True, (255, 255, 255))
+    font_debug_text = pygame.font.Font(font_emoji, 18) or font_small
+    debug_txt = font_debug_text.render(f"⚙️ Debug: {debug_status}", True, (255, 255, 255))
     surf.blit(debug_txt, debug_txt.get_rect(center=debug_btn.center))
     
-    # Tasto D sopra il bottone
-    letter_txt = font_number.render("D", True, (0, 0, 0))
-    surf.blit(letter_txt, (debug_btn.centerx - 7, debug_btn.top - 25))
+    # Tasto D sopra il bottone (centrato)
+    letter_d = font_number.render("D", True, (0, 0, 0))
+    surf.blit(letter_d, (debug_btn.centerx - letter_d.get_width() // 2, debug_btn.top - 25))
     # =======================================================================
     
-    # Istruzioni (spostate più in alto)
+    # ============ AUDIO MODE: Bottone sotto il debug ============
+    audio_btn = pygame.Rect(WIDTH - 160, 165, 150, 35)  # 65px sotto debug
+    audio_color = (50, 200, 50) if audio_enabled else (200, 50, 50)
+    pygame.draw.rect(surf, audio_color, audio_btn, border_radius=8)
+    
+    # ✅ PERSONALIZZAZIONE 1: Icone diverse ON/OFF
+    audio_icon = "🔊" if audio_enabled else "🔇"
+    audio_status = "ON" if audio_enabled else "OFF"
+    
+    # Usa emoji_font per l'icona + font normale per il testo
+    font_audio_icon = emoji_font(18)  # Font emoji
+    font_audio_text = pygame.font.Font(font_emoji, 18) or font_small  # Font testo
+    
+    # Renderizza icona e testo separatamente
+    icon_surf = font_audio_icon.render(audio_icon, True, (255, 255, 255))
+    text_surf = font_audio_text.render(f" Audio: {audio_status}", True, (255, 255, 255))
+    
+    # Calcola posizioni per centrare entrambi
+    total_width = icon_surf.get_width() + text_surf.get_width()
+    start_x = audio_btn.centerx - total_width // 2
+    start_y = audio_btn.centery - max(icon_surf.get_height(), text_surf.get_height()) // 2
+    
+    surf.blit(icon_surf, (start_x, start_y))
+    surf.blit(text_surf, (start_x + icon_surf.get_width(), start_y))
+    
+    # Tasto A sopra il bottone (centrato)
+    letter_a = font_number.render("A", True, (0, 0, 0))
+    surf.blit(letter_a, (audio_btn.centerx - letter_a.get_width() // 2, audio_btn.top - 25))
+    # ==============================================================
+    
+    # Istruzioni
     hint1 = font_small.render("Use numbers/letters or click to select", True, (100, 100, 100))
     surf.blit(hint1, hint1.get_rect(center=(WIDTH//2, HEIGHT - 40)))
     hint2 = font_small.render("Press SPACE to start", True, (100, 100, 100))
     surf.blit(hint2, hint2.get_rect(center=(WIDTH//2, HEIGHT - 20)))
     
-    return shape_buttons, color_buttons, debug_btn  # <-- RESTITUISCE ANCHE debug_btn
+    return shape_buttons, color_buttons, debug_btn, audio_btn
+
+def set_all_sounds_volume(volume):
+    """Imposta il volume di tutti i suoni del gioco"""
+    for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, 
+                S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
+        if snd:
+            snd.set_volume(volume)
 
 def draw_pause_overlay(surf):
     font = pygame.font.SysFont("ubuntumono", 56) or pygame.font.SysFont("Arial", 56) or pygame.font.SysFont(None, 56)
@@ -967,12 +1132,26 @@ def draw_debt_indicator(surf, bird_x, bird_y, bird_size):
     # Posiziona a destra dell'uccello
     surf.blit(icon, (bird_x + bird_size + 5, bird_y + bird_size // 2 - 12))
 
-def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_active, cur_speed, game_time_ms, pipe_gap, gravity_mult):
+def draw_spaghetti_active(surf, ms_left):
+    """Mostra indicatore quando i controlli sono invertiti"""
+    font = pygame.font.Font(font_emoji, 26) or pygame.font.SysFont(None, 26)
+    txt = font.render(f"SPAGHETTI ANTIGRAVITY! {max(0, ms_left//1000)}s", True, (255, 0, 0))
+    rect = txt.get_rect(center=(WIDTH//2, 95))
+    surf.blit(txt, rect)
+
+def draw_spaghetti_indicator(surf, bird_x, bird_y, bird_size):
+    """Disegna l'icona 🍝 vicino all'uccello quando i controlli sono invertiti"""
+    font_small = emoji_font(18)
+    icon = font_small.render("🍝", True, (255, 200, 0))  # Oro scuro
+    # Posiziona a sinistra dell'uccello
+    surf.blit(icon, (bird_x - icon.get_width() - 5, bird_y + bird_size // 2 - 12))
+
+def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_active, spaghetti_active, cur_speed, game_time_ms, pipe_gap, gravity_mult):
     """Mostra informazioni di debug sulla velocità, gravità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
     
     # Background semi-trasparente (aumentato per gravità)
-    debug_bg = pygame.Surface((250, 180), pygame.SRCALPHA)
+    debug_bg = pygame.Surface((250, 200), pygame.SRCALPHA)
     debug_bg.fill((0, 0, 0, 180))
     surf.blit(debug_bg, (10, HEIGHT - 210))
     
@@ -1018,6 +1197,11 @@ def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_
     
     txt8 = font_debug.render(f"Grav Mult: {gravity_mult:.1f}x", True, color_gravity)
     surf.blit(txt8, (15, y_offset + 140))
+
+    # Spaghetti mode
+    color_spaghetti = (255, 100, 100) if spaghetti_active else (255, 255, 255)
+    txt9 = font_debug.render(f"Inverted: {spaghetti_active}", True, color_spaghetti)
+    surf.blit(txt9, (15, y_offset + 160))
 
 def present(surf):
     # surf è la surface logica (WIN) 500x750
@@ -1069,6 +1253,7 @@ def main():
     waiting_restart  = False
     selecting_shape = False
     debug_mode = False
+    audio_enabled = True
     
     # Selezioni correnti nel menu (quelle evidenziate)
     current_shape_selection = 'random'
@@ -1086,6 +1271,7 @@ def main():
     shape_buttons = []
     color_buttons = []
     debug_btn = pygame.Rect(0, 0, 0, 0)
+    audio_btn = pygame.Rect(0, 0, 0, 0)
     invuln_time, last_pipe = 0, pygame.time.get_ticks()
     game_over_start = 0   # timestamp game-over
 
@@ -1108,6 +1294,7 @@ def main():
     legacy_next    = pygame.time.get_ticks() + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
     debt_next      = pygame.time.get_ticks() + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
     mud_next       = pygame.time.get_ticks() + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+    spaghetti_next = pygame.time.get_ticks() + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -1127,8 +1314,9 @@ def main():
 # ----- DEBT TIMER -----
     debt_until     = 0
 
-# ----- BOSS TIMER -----
-    ice_until      = 0
+# ----- SPAGHETTI TIMER -----
+    spaghetti_until = 0
+
 
 # ----- LIVELLI -----
     level_timer      = 0
@@ -1211,6 +1399,10 @@ def main():
                 # Controlla click su debug mode  # <-- NUOVO
                 if debug_btn.collidepoint(log_x, log_y):
                     debug_mode = not debug_mode
+                # Controlla click su audio mode
+                if audio_btn.collidepoint(log_x, log_y):
+                    audio_enabled = not audio_enabled
+                    set_all_sounds_volume(0.5 if audio_enabled else 0.0)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p and playing and not waiting_restart:
                     if not paused:  # Sta per andare in pausa
@@ -1220,11 +1412,10 @@ def main():
                     paused = not paused
                     break
                 
-                if waiting_restart:
-                    # distinguiamo vittoria da game over
+                if waiting_restart:  # ✅ AGGIUNTO questo controllo
                     if won_waiting: # Vittoria
                         if event.key == pygame.K_SPACE:
-                            if now < win_block_until:          # <--- attendi 2 s
+                            if now < win_block_until:
                                 continue
                             # Torna al menu di selezione dopo vittoria
                             won_waiting = False
@@ -1239,6 +1430,14 @@ def main():
                             pipes.clear()
                             particles.clear()
                             won = False
+                            # RESET COMPLETO TIMER EFFETTI  # <-- AGGIUNTO
+                            zebra_until = 0
+                            zebra_pending = False
+                            ice_until = 0
+                            debt_until = 0
+                            spaghetti_until = 0
+                            finish_line = None
+                            finish_line_spawned = False
                             # Aumenta difficoltà base per la prossima partita
                             base_speed = min(6, base_speed + 0.5)
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
@@ -1282,11 +1481,17 @@ def main():
                             bg_color   = random.choice(LIGHT_COLORS)
                             land_color = random.choice(LAND_COLORS)
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                            golden_next = now + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)  # <-- AGGIUNTO
+                            ice_next = now + random.randint(ICE_MIN_MS, ICE_MAX_MS)            # <-- AGGIUNTO
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                            spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                             mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
+                            ice_until = 0                                                      # <-- AGGIUNTO
+                            debt_until = 0                                                     # <-- AGGIUNTO
+                            spaghetti_until = 0                                                # <-- AGGIUNTO
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear(); playing = True
@@ -1349,6 +1554,12 @@ def main():
                         # Toggle Debug Mode
                         elif event.key == pygame.K_d:
                             debug_mode = not debug_mode
+
+                        # Toggle Audio Mode
+                        elif event.key == pygame.K_a:
+                            audio_enabled = not audio_enabled
+                            set_all_sounds_volume(0.5 if audio_enabled else 0.0)  # ✅ CORRETTO                            
+
                         # Conferma con SPACE
                         elif event.key == pygame.K_SPACE:
                             # Salva le selezioni confermate
@@ -1391,22 +1602,28 @@ def main():
                             bg_color   = random.choice(LIGHT_COLORS)
                             land_color = random.choice(LAND_COLORS)
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
+                            golden_next = now + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)  # <-- AGGIUNTO
+                            ice_next = now + random.randint(ICE_MIN_MS, ICE_MAX_MS)            # <-- AGGIUNTO
                             legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                            spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                             mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
+                            ice_until = 0                                                      # <-- AGGIUNTO
+                            debt_until = 0                                                     # <-- AGGIUNTO
+                            spaghetti_until = 0
                             level_timer = 0; speed_lvl = 1.0; score_lvl = 1
                             won = False; won_waiting = False
                             particles.clear()
                             finish_line = None; finish_line_spawned = False
                             auto_flying = False
                     elif playing and event.key == pygame.K_SPACE and not paused and not auto_flying:
-                        bird.jump()
+                        bird.jump(inverted=(now < spaghetti_until))  # <-- AGGIUNTO parametro inverted
                         for _ in range(5):
                             particles.append(Particle(bird.x + bird.size//2,
                                                     bird.y + bird.size,
-                                                    bird.color))  # <-- AGGIUNTO bird.color
+                                                    bird.color))
                     elif event.key in (pygame.K_q, pygame.K_ESCAPE):
                         running = False
                     elif event.type == pygame.VIDEORESIZE:
@@ -1455,7 +1672,8 @@ def main():
                 bird.set_transparent(255)
             # Applica gravità aumentata se debt è attivo
             debt_mult = DEBT_GRAVITY_MULT if now < debt_until else 1.0
-            bird.update(gravity_mult=debt_mult)
+            spaghetti_active = now < spaghetti_until
+            bird.update(gravity_mult=debt_mult, inverted=spaghetti_active)
 
 # ----- aggiorna timer livello -----
             level_timer += dt
@@ -1538,6 +1756,9 @@ def main():
                 elif now >= debt_next and debt_until <= now:
                     pipes.append(TechnicalDebtPipe(WIDTH, base_gap=current_gap))
                     debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
+                elif now >= spaghetti_next and spaghetti_until <= now:
+                    pipes.append(SpaghettiPipe(WIDTH))
+                    spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                 elif now >= legacy_next:
                     pipes.append(LegacyPipe(WIDTH, base_gap=current_gap))
                     legacy_next = now + random.randint(LEGACY_MIN_MS, LEGACY_MAX_MS)
@@ -1593,7 +1814,9 @@ def main():
                 # 3. Se NON c'è stata collisione, controlla per il punteggio
                 else:
                     for p in pipes:
-                        if not p.passed and p.x + PIPE_W < bird.x:
+                        # Usa larghezza corretta (MudPipe è più larga)
+                        pipe_width = MUD_PIPE_W if getattr(p, 'is_mud', False) else PIPE_W
+                        if not p.passed and p.x + pipe_width < bird.x:
                             p.passed = True
                             pts = 1
                             skip_zebra_mult = False  # Flag per debt pipe
@@ -1629,6 +1852,11 @@ def main():
                             elif getattr(p, 'is_legacy', False):
                                 pts = LEGACY_POINTS
                                 S_LEGACY.play()
+                                flash_until = now + FLASH_MS
+                            elif getattr(p, 'is_spaghetti', False):
+                                pts = SPAGHETTI_POINTS
+                                spaghetti_until = now + SPAGHETTI_DURATION_MS
+                                S_SPAGHETTI.play()
                                 flash_until = now + FLASH_MS                            
                             else:
                                 S_POINT.play()
@@ -1653,7 +1881,7 @@ def main():
 
             # Aggiorna posizione tubi (fuori dal blocco di collisione)
             for p in pipes[:]:
-                p.update(speed=int(master_speed))
+                p.update(speed=master_speed)
                 if p.x + PIPE_W < 0:
                     pipes.remove(p)
 
@@ -1687,8 +1915,8 @@ def main():
                     cloud.draw(WIN)
                 for cloud in clouds_layer2:
                     cloud.draw(WIN)
-                new_shape_btns, new_color_btns, debug_btn = draw_shape_selection_menu(
-                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode
+                new_shape_btns, new_color_btns, debug_btn, audio_btn = draw_shape_selection_menu(  # <-- MODIFICATO
+                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode, audio_enabled  # <-- AGGIUNTO audio_enabled
                 )
                 shape_buttons = new_shape_btns
                 color_buttons = new_color_btns
@@ -1726,10 +1954,14 @@ def main():
                 draw_ice_active(WIN, ice_until - now)
             if now < debt_until:
                 draw_debt_indicator(WIN, bird.x, bird.y, bird.size)
+            if now < spaghetti_until:
+                draw_spaghetti_active(WIN, spaghetti_until - now)
+                draw_spaghetti_indicator(WIN, bird.x, bird.y, bird.size)
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
                 draw_debug_info(WIN, base_speed, speed_lvl,
                                 now < zebra_until, now < ice_until, now < debt_until,
+                                now < spaghetti_until,
                                 master_speed, level_timer, current_gap, debt_mult)
 
         if paused:
