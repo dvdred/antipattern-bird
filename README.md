@@ -104,9 +104,10 @@ The game window is **resizable** - drag the corners to adjust the size while mai
 ### Game Interface
 
 ```
-Score: 42      ❤ ❤ ❤      Level 1
+Score: 42 🏆x1 ❤ ❤ ❤ Level 1
 ```
 - **Score** - total points collected  
+- **🏆x{N}** - **Tier multiplier** (increases after each victory)
 - **❤** - remaining lives (max 6)  
 - **Level** - auto-scaling difficulty (1→2→3 based on elapsed time)
 
@@ -120,6 +121,26 @@ Score: 42      ❤ ❤ ❤      Level 1
 * **30 pt** - Reached Level 3
 * **50 pt** - Won the game (survived 4 minutes)
 * **+100 pt** - Won with maximum lives (6❤)
+
+### Tier System (Progressive Challenge)
+
+After each **victory** (surviving 4 minutes), the game becomes progressively harder:
+
+| Tier | Base Speed | Score Multiplier | How to Reach |
+|------|-----------|------------------|--------------|
+| 🏆x1 | 2.5 | Final score ×1 | Start of game |
+| 🏆x2 | 3.0 | Final score ×2 | Win once |
+| 🏆x3 | 3.5 | Final score ×3 | Win twice |
+| ... | ... | ... | ... |
+
+**How it works:**
+1. **Your tier is displayed** in the top-right corner during gameplay (🏆x2, 🏆x3, etc.)
+2. **Final score calculation** at Game Over or Victory:
+
+```
+Base Score + Bonuses = Subtotal
+Subtotal × Tier = FINAL SCORE
+```
 
 ### Special Pipes
 
@@ -209,21 +230,37 @@ The game automatically increases difficulty based on time survived:
 ### Game Over & Continue
 
 When you lose all lives:
-- **Best Score** is displayed (highest score in current session)
-- **Bonus points** are added based on level reached
+- Base score (points earned during the run)
+- Level bonus (+0/+15/+30 based on highest level reached)
+- Tier multiplier applied to final score
+- Best score comparison
+
+**What happens next:**
+- **Tier resets to 1** (fresh start)
 - Press `SPACE` to **restart** with the same bird customization
 - Press `O` to **return to customization menu** and change your bird
 - Press `Q` to quit
+
 
 > **Tip**: After a tough run, press `O` to try a different shape or color!
 
 ### Victory & Progressive Difficulty
 
+### Victory & Progressive Difficulty
+
 When you reach the **4-minute mark**:
-1. You see the **WIN screen** with your score and bonuses
-2. Press `SPACE` to return to the **customization menu**
-3. The next game will have **+0.5 base speed** (stacks up to 6.0×)
-4. This creates an endless challenge for skilled players!
+1. The bird **auto-flies** to the finish line (no input needed)
+2. You see the **detailed WIN screen** showing:
+   - Base score breakdown
+   - Win bonuses (+50 base, +100 if FULL ❤)
+   - Subtotal calculation
+   - **Tier multiplier** applied to final score
+   - Best score comparison (with "NEW RECORD!" if beaten)
+3. Press `SPACE` to return to the **customization menu**
+4. **Your tier increases by 1** for the next game
+5. Base speed increases by **+0.5** (capped at 6.0)
+
+> **Endless Challenge**: Skilled players can push their tier as high as possible. Tier 10+ runs are legendary! 🏆
 
 ## Visual Features
 
@@ -241,6 +278,7 @@ When you reach the **4-minute mark**:
 3. **Learn the rhythm** - Each level has a consistent scroll speed - find your timing
 4. **Don't panic after hits** - You have 2 seconds of invulnerability to reposition
 5. **Mix it up** - Try different bird shapes - they have slightly different visual hitboxes!
+6. **Watch the tier indicator** - The 🏆x{N} in the top-right reminds you of your current multiplier
 
 ## Sound Effects (from https://freesound.org )
 
