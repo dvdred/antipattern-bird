@@ -156,8 +156,8 @@ MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
                      (255, 215, 0)]   # giallo    (come Golden)
 
 # ---------- GHOST PIPE (Memory test) ----------
-GHOST_MIN_MS = 40_000        # 40 secondi
-GHOST_MAX_MS = 45_000        # 45 secondi
+GHOST_MIN_MS = 15_000        # 40 secondi
+GHOST_MAX_MS = 50_000        # 45 secondi
 GHOST_POINTS = 3
 GHOST_FADE_MS = 2_000        # Diventa invisibile dopo 2 secondi
 GHOST_COLOR = (200, 200, 255)  # Azzurro pallido
@@ -224,7 +224,7 @@ def emoji_font(size, scale=None):
                 fallback_map = {
                     "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
                     "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
-                    "⚓": "[#]", "→": ">"
+                     "⚓": "[#]", "→": ">", "🦓": "[ZB]" 
                 }
                 fallback_text = fallback_map.get(text, "?")
                 big = fallback_font.render(fallback_text, antialias, color, background)
@@ -1230,6 +1230,20 @@ def draw_spaghetti_indicator(surf, bird_x, bird_y, bird_size):
     # Posiziona a sinistra dell'uccello
     surf.blit(icon, (bird_x - icon.get_width() - 5, bird_y + bird_size // 2 - 12))
 
+def draw_zebra_indicator(surf, bird_x, bird_y, bird_size):
+    """Disegna l'icona 🦓 sotto l'uccello quando Zebra Speed è attivo"""
+    font_small = emoji_font(18)
+    icon = font_small.render("🦓", True, (0, 0, 0))  # Nero (come la zebra)
+    # Posiziona SOTTO il bird, centrato orizzontalmente
+    surf.blit(icon, (bird_x + bird_size // 2 - icon.get_width() // 2, bird_y + bird_size + 5))   
+
+def draw_ice_indicator(surf, bird_x, bird_y, bird_size):
+    """Disegna l'icona ❄️ sopra l'uccello quando Ice Time è attivo"""
+    font_small = emoji_font(18)
+    icon = font_small.render("❄️", True, (0, 0, 139))  # Blu scuro (DarkBlue)
+    # Posiziona SOPRA il bird, centrato orizzontalmente
+    surf.blit(icon, (bird_x + bird_size // 2 - icon.get_width() // 2, bird_y - icon.get_height() - 5))
+
 def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_active, spaghetti_active, cur_speed, game_time_ms, pipe_gap, gravity_mult):
     """Mostra informazioni di debug sulla velocità, gravità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
@@ -2048,8 +2062,10 @@ def main():
                 p.draw(WIN)
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
+                draw_zebra_indicator(WIN, bird.x, bird.y, bird.size)
             if now < ice_until:
                 draw_ice_active(WIN, ice_until - now)
+                draw_ice_indicator(WIN, bird.x, bird.y, bird.size)
             if now < debt_until:
                 draw_debt_indicator(WIN, bird.x, bird.y, bird.size)
             if now < spaghetti_until:

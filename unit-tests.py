@@ -236,12 +236,32 @@ class TestDrawZebraActive(unittest.TestCase):
 
         surface.blit.assert_called()
 
+class TestDrawZebraIndicator(unittest.TestCase):
+    """Test per la funzione draw_zebra_indicator"""
+    def test_draw_zebra_indicator_called(self):
+        surface = Mock()
+        bird_x, bird_y, bird_size = 100, 100, 20
+
+        draw_zebra_indicator(surface, bird_x, bird_y, bird_size)
+
+        surface.blit.assert_called()
+
 class TestDrawIceActive(unittest.TestCase):
     def test_draw_ice_active_called(self):
         surface = Mock()
         remaining_time = 8000
 
         draw_ice_active(surface, remaining_time)
+
+        surface.blit.assert_called()
+
+class TestDrawIceIndicator(unittest.TestCase):
+    """Test per la funzione draw_ice_indicator"""
+    def test_draw_ice_indicator_called(self):
+        surface = Mock()
+        bird_x, bird_y, bird_size = 100, 100, 20
+
+        draw_ice_indicator(surface, bird_x, bird_y, bird_size)
 
         surface.blit.assert_called()
 
@@ -515,8 +535,8 @@ class TestGhostPipeConstants(unittest.TestCase):
         
     def test_ghost_spawn_time_constants(self):
         """Test che i tempi di spawn siano definiti correttamente"""
-        self.assertEqual(GHOST_MIN_MS, 40_000)   # 40 secondi
-        self.assertEqual(GHOST_MAX_MS, 45_000)   # 45 secondi
+        self.assertEqual(GHOST_MIN_MS, 15_000)   # 15 secondi
+        self.assertEqual(GHOST_MAX_MS, 50_000)   # 50 secondi
         
     def test_ghost_color_constant(self):
         """Test che GHOST_COLOR sia definito correttamente"""
