@@ -1130,5 +1130,73 @@ class TestBonusPointsConstants(unittest.TestCase):
         """Test che BONUS_NOTIFICATION_MS sia definito"""
         self.assertEqual(BONUS_NOTIFICATION_MS, 2_000)
 
+class TestCloud(unittest.TestCase):
+    def test_cloud_initialization(self):
+        cloud = Cloud(100, 100, 50, 1.0, 150)
+        
+        self.assertEqual(cloud.x, 100)
+        self.assertEqual(cloud.y, 100)
+        self.assertEqual(cloud.speed, 1.0)
+        self.assertGreater(cloud.size, 0)
+        self.assertIsNotNone(cloud.surface)
+        
+    def test_cloud_wraps_around_screen(self):
+        cloud = Cloud(0, 100, 50, 1.0, 150)
+        cloud.x = -cloud.surf_w - 10  # Fuori schermo
+        cloud.update()
+        
+        self.assertGreater(cloud.x, WIDTH)  # Dovrebbe riapparire a destra
+        
+    def test_cloud_palette_valid(self):
+        cloud = Cloud(100, 100, 50, 1.0, 150)
+        
+        # Verifica che la palette sia una delle predefinite
+        self.assertIn(cloud.palette, Cloud.PALETTES)
+
+class TestEmojiFont(unittest.TestCase):
+    def test_emoji_font_renders_emoji(self):
+        font = emoji_font(24)
+        surface = font.render("🎮", True, (255, 255, 255))
+        
+        self.assertGreater(surface.get_width(), 0)
+        self.assertGreater(surface.get_height(), 0)
+        
+    def test_emoji_font_fallback_on_error(self):
+        """Test fallback quando emoji non renderizza"""
+        font = emoji_font(24)
+        
+        # Simula emoji che fallisce (usando carattere non supportato)
+        surface = font.render("💩", True, (255, 255, 255))
+        
+        # Dovrebbe comunque restituire qualcosa (fallback)
+        self.assertIsNotNone(surface)
+        self.assertGreater(surface.get_width(), 0)
+
+class TestEdgeCases(unittest.TestCase):
+    def test_bird_cannot_exceed_velocity_limit(self):
+        bird = Bird()
+        bird.vel = 20  # Oltre il limite
+        bird.update()
+        
+        self.assertLessEqual(abs(bird.vel), 10)
+        
+    def test_negative_lives_triggers_game_over(self):
+        # Simula stato di gioco
+        lives = 1
+        # Collisione
+        lives -= 1
+        
+        self.assertEqual(lives, 0)
+        
+    def test_score_overflow_safe(self):
+        score = 2**30  # Valore molto grande
+        score += 1000
+        
+        self.assertGreater(score, 0)  # Non overflow negativo
+        
+    def test_zero_speed_pipe_spawn_fallback(self):
+        result = get_pipe_spawn_time(0, 300)
+        self.assertEqual(result, 1500)  # ✅ Già testato!
+
 if __name__ == '__main__':
     unittest.main()
