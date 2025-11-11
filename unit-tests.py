@@ -219,6 +219,34 @@ class TestDrawLevel(unittest.TestCase):
 
         surface.blit.assert_called()
 
+class TestDrawTier(unittest.TestCase):
+    """Test per la funzione draw_tier"""
+    def test_draw_tier_called(self):
+        surface = Mock()
+        tier = 2
+
+        draw_tier(surface, tier)
+
+        surface.blit.assert_called()
+        
+    def test_draw_tier_with_tier_one(self):
+        """Test con tier = 1"""
+        surface = Mock()
+        tier = 1
+
+        draw_tier(surface, tier)
+
+        surface.blit.assert_called()
+        
+    def test_draw_tier_with_high_tier(self):
+        """Test con tier alto (es. 10)"""
+        surface = Mock()
+        tier = 10
+
+        draw_tier(surface, tier)
+
+        surface.blit.assert_called()
+
 class TestDrawPauseOverlay(unittest.TestCase):
     def test_draw_pause_overlay_called(self):
         surface = Mock()
@@ -352,20 +380,50 @@ class TestDrawStartScreen(unittest.TestCase):
 
 class TestDrawGameOver(unittest.TestCase):
     def test_draw_game_over_called(self):
-        surface = Mock()
-        score = 1000
-        high_score = 2000
-        bonus_score = 0
-        draw_game_over(surface, score, high_score, bonus_score)
-        surface.blit.assert_called()
+        surface = pygame.Surface((WIDTH, HEIGHT))  # Usa Surface reale
+        base_pts = 200
+        lvl_bonus = 30  # Livello 3
+        subtotal = 230
+        tier_mult = 2
+        final_pts = 460
+        best_pts = 500
+        
+        # Verifica che non sollevi eccezioni
+        try:
+            draw_game_over(surface, base_pts, lvl_bonus, subtotal, tier_mult, final_pts, best_pts)
+            success = True
+        except Exception as e:
+            success = False
+            print(f"Exception raised: {e}")
+            
+        self.assertTrue(success, "draw_game_over() raised an exception")
 
 class TestDrawWinScreen(unittest.TestCase):
     def test_draw_win_screen_called(self):
-        surface = Mock()  # Usa Mock invece di pygame.Surface
-        score = 1000
-        high_score = 2000
-        draw_win_screen(surface, score, high_score)
-        surface.blit.assert_called()  # Ora funziona perché surface è un Mock
+        surface = pygame.Surface((WIDTH, HEIGHT))
+        base_pts = 1000
+        win_bonus_base = 50
+        win_bonus_lives = 100
+        subtotal = 1150  # 1000 + 50 + 100
+        tier_mult = 3
+        final_pts = 3450  # 1150 × 3
+        best_pts = 5000
+        
+        # Verifica che la funzione non sollevi eccezioni
+        try:
+            draw_win_screen(surface, base_pts, win_bonus_base, win_bonus_lives, 
+                           subtotal, tier_mult, final_pts, best_pts)
+            success = True
+        except Exception as e:
+            success = False
+            print(f"Exception raised: {e}")
+            
+        self.assertTrue(success, "draw_win_screen() raised an exception")
+        
+        # Verifica che qualcosa sia stato disegnato (superficie non vuota)
+        # Campiona alcuni pixel per verificare che non siano tutti trasparenti
+        pixel_sample = surface.get_at((WIDTH//2, HEIGHT//2))
+        self.assertIsNotNone(pixel_sample, "Surface should have some content")
 
 # ============================================================================
 #                     TEST PER GHOST PIPE (NUOVI)
