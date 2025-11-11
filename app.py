@@ -35,6 +35,7 @@ legacy_sound    = get_resource_path('legacy.wav')
 debt_sound      = get_resource_path('debt.wav')
 spaghetti_sound = get_resource_path('spaghetti.wav')
 mud_sound       = get_resource_path('mud.wav')
+ghost_sound     = get_resource_path('ghost.wav')
 win_sound       = get_resource_path('win.wav')
 font_emoji      = get_resource_path('DejaVuSansMono.ttf')
 font_emoji_ext  = get_resource_path('NotoColorEmoji.ttf')
@@ -58,9 +59,10 @@ S_LEGACY = pygame.mixer.Sound(legacy_sound)
 S_DEBT = pygame.mixer.Sound(debt_sound)
 S_SPAGHETTI = pygame.mixer.Sound(spaghetti_sound)
 S_MUD = pygame.mixer.Sound(mud_sound)
+S_GHOST = pygame.mixer.Sound(ghost_sound)
 S_WIN = pygame.mixer.Sound(win_sound)
 
-for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
+for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_GHOST, S_WIN):
     if snd:
         snd.set_volume(0.5)
 
@@ -111,6 +113,11 @@ RAINBOW_POINTS = 3
 RAINBOW_COLORS = [(255,0,0), (255,127,0), (255,255,0),
                   (0,255,0), (0,0,255), (75,0,130)]
 
+# ---------- BONUS NOTIFICATION ----------
+BONUS_NOTIFICATION_MS = 2_000     # 2 secondi
+BONUS_POINTS_PER_LEVEL = 10       # punti × livello quando vite = max
+BONUS_NOTIFICATION_EMOJI = "⭐"   # Star, extra points
+
 ZEBRA_COLORS = [(0,0,0), (255,255,255)]
 ZEBRA_DURATION_MS = 8_000
 SPEED_MULTIPLIER = 1.5
@@ -152,6 +159,13 @@ MUD_PIPE_W        = 110              # larghezza pipe
 MUD_GAP           = 110               # altezza singolo gap
 MUD_COLORS        = [(101, 67, 33),  # marroni   (come Legacy)
                      (255, 215, 0)]   # giallo    (come Golden)
+
+# ---------- GHOST PIPE (Memory test) ----------
+GHOST_MIN_MS = 15_000        # 40 secondi
+GHOST_MAX_MS = 50_000        # 45 secondi
+GHOST_POINTS = 3
+GHOST_FADE_MS = 2_000        # Diventa invisibile dopo 2 secondi
+GHOST_COLOR = (200, 200, 255)  # Azzurro pallido
 
 # ---------- LEVEL TIMEs ----------
 LVL2_TIME = 90_000
@@ -215,7 +229,8 @@ def emoji_font(size, scale=None):
                 fallback_map = {
                     "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
                     "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
-                    "⚓": "[#]", "→": ">"
+                    "⚓": "[#]", "→": ">", "🦓": "[ZB]",
+                    "⭐": "[$]"
                 }
                 fallback_text = fallback_map.get(text, "?")
                 big = fallback_font.render(fallback_text, antialias, color, background)
@@ -820,6 +835,81 @@ class BigBallOfMudPipe(Pipe):
                         HEIGHT - self.height - MUD_GAP - 50)
         return b.colliderect(t) or b.colliderect(bo)
 
+class GhostPipe(Pipe):
+    """Pipe fantasma che diventa invisibile dopo 2s ma rimane solida"""
+    def __init__(self, x, spawn_time):
+        super().__init__(x, text="", gap=PIPE_GAP)
+        self.color = GHOST_COLOR
+        self.is_ghost = True
+        self.passed = False
+        self.spawn_time = spawn_time
+        
+    def get_alpha(self, current_time):
+        """Calcola trasparenza in base al tempo trascorso dallo spawn"""
+        elapsed = current_time - self.spawn_time
+        if elapsed < GHOST_FADE_MS:
+            return 76  # 30% di 255 = semi-trasparente
+        else:
+            return 0   # Invisibile
+    
+    def draw(self, surf, alpha=255, current_time=0):
+        """Disegna con trasparenza dinamica e bordo tratteggiato"""
+        actual_alpha = self.get_alpha(current_time) if current_time > 0 else alpha
+        
+        bot_h = HEIGHT - self.height - self.gap - 50
+        
+        # Riempimento semi-trasparente
+        top = pygame.Surface((PIPE_W, self.height), pygame.SRCALPHA)
+        top.fill((*self.color, actual_alpha))
+        surf.blit(top, (self.x, 0))
+        
+        bottom = pygame.Surface((PIPE_W, bot_h), pygame.SRCALPHA)
+        bottom.fill((*self.color, actual_alpha))
+        surf.blit(bottom, (self.x, self.height + self.gap))
+        
+        # Bordo tratteggiato (solo quando visibile)
+        if actual_alpha > 10:
+            dash_length = 10
+            # Bordi superiori
+            for y in range(0, self.height, dash_length * 2):
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x, y), (self.x, min(y + dash_length, self.height)), 2)
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x + PIPE_W, y), (self.x + PIPE_W, min(y + dash_length, self.height)), 2)
+            
+            # Bordi inferiori
+            bot_y_start = self.height + self.gap
+            for y in range(0, bot_h, dash_length * 2):
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x, bot_y_start + y), 
+                               (self.x, bot_y_start + min(y + dash_length, bot_h)), 2)
+                pygame.draw.line(surf, (255, 255, 255, actual_alpha),
+                               (self.x + PIPE_W, bot_y_start + y), 
+                               (self.x + PIPE_W, bot_y_start + min(y + dash_length, bot_h)), 2)
+        
+        # Testo "GHOST" (solo quando abbastanza visibile)
+        if actual_alpha > 30:
+            font_small = pygame.font.SysFont("ubuntumono", 22) or pygame.font.SysFont(None, 22)
+            lines = ["GH", "OS", "T"]
+            line_h = 22
+            
+            # Parte superiore
+            start_y = max(5, (self.height - len(lines) * line_h) // 2)
+            for i, line in enumerate(lines):
+                y_pos = start_y + i * line_h
+                if y_pos + line_h <= self.height - 5:
+                    txt = font_small.render(line, True, (255, 255, 255))
+                    surf.blit(txt, (self.x + (PIPE_W - txt.get_width()) // 2, y_pos))
+            
+            # Parte inferiore
+            start_y_bot = max(5, (bot_h - len(lines) * line_h) // 2)
+            for i, line in enumerate(lines):
+                y_pos = start_y_bot + i * line_h
+                if y_pos + line_h <= bot_h - 5:
+                    txt = font_small.render(line, True, (255, 255, 255))
+                    surf.blit(txt, (self.x + (PIPE_W - txt.get_width()) // 2, 
+                                   self.height + self.gap + y_pos))
+
 class FinishLine:
     """Traguardo a scacchi che appare prima della vittoria"""
     def __init__(self, x):
@@ -904,7 +994,7 @@ def draw_win_screen(surf, sc, bonus):
     txt_sc = font_med.render(f"Points: {sc}  (bonus {bonus})", True, (0, 0, 0))
     rect_sc = txt_sc.get_rect(center=(WIDTH//2, HEIGHT//2 - 45))
     surf.blit(txt_sc, rect_sc)
-    txt3 = font_med.render("SPACE = continue    Q = quit", True, (0, 0, 0))
+    txt3 = font_med.render("SPACE = continue (+speed)   Q = quit", True, (0, 0, 0))
     rect3 = txt3.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))
     surf.blit(txt3, rect3)
 
@@ -1100,7 +1190,7 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
 def set_all_sounds_volume(volume):
     """Imposta il volume di tutti i suoni del gioco"""
     for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, 
-                S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_WIN):
+                S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_GHOST, S_WIN):
         if snd:
             snd.set_volume(volume)
 
@@ -1145,6 +1235,37 @@ def draw_spaghetti_indicator(surf, bird_x, bird_y, bird_size):
     icon = font_small.render("🍝", True, (255, 200, 0))  # Oro scuro
     # Posiziona a sinistra dell'uccello
     surf.blit(icon, (bird_x - icon.get_width() - 5, bird_y + bird_size // 2 - 12))
+
+def draw_zebra_indicator(surf, bird_x, bird_y, bird_size):
+    """Disegna l'icona 🦓 sotto l'uccello quando Zebra Speed è attivo"""
+    font_small = emoji_font(18)
+    icon = font_small.render("🦓", True, (0, 0, 0))  # Nero (come la zebra)
+    # Posiziona SOTTO il bird, centrato orizzontalmente
+    surf.blit(icon, (bird_x + bird_size // 2 - icon.get_width() // 2, bird_y + bird_size + 5))   
+
+def draw_ice_indicator(surf, bird_x, bird_y, bird_size):
+    """Disegna l'icona ❄️ sopra l'uccello quando Ice Time è attivo"""
+    font_small = emoji_font(18)
+    icon = font_small.render("❄️", True, (0, 0, 139))  # Blu scuro (DarkBlue)
+    # Posiziona SOPRA il bird, centrato orizzontalmente
+    surf.blit(icon, (bird_x + bird_size // 2 - icon.get_width() // 2, bird_y - icon.get_height() - 5))
+
+def draw_bonus_notification(surf, points, bird_x, bird_y, bird_size):
+    """Mostra emoji + punti bonus quando MAX_LIVES è raggiunto"""
+    font_emoji = emoji_font(24)
+    font_text = pygame.font.SysFont("ubuntumono", 20, bold=True) or pygame.font.SysFont(None, 20)
+    
+    # Emoji
+    icon = font_emoji.render(BONUS_NOTIFICATION_EMOJI, True, (255, 215, 0))  # Oro
+    # Testo punti
+    text = font_text.render(f"+{points}", True, (255, 215, 0))
+    
+    # Posiziona a DESTRA del bird (vicino al bird, ben visibile)
+    icon_x = bird_x + bird_size + 10
+    icon_y = bird_y + bird_size // 2 - icon.get_height() // 2
+    
+    surf.blit(icon, (icon_x, icon_y))
+    surf.blit(text, (icon_x + icon.get_width() + 5, icon_y + 5))
 
 def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_active, spaghetti_active, cur_speed, game_time_ms, pipe_gap, gravity_mult):
     """Mostra informazioni di debug sulla velocità, gravità e tempo di gioco"""
@@ -1295,6 +1416,7 @@ def main():
     debt_next      = pygame.time.get_ticks() + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
     mud_next       = pygame.time.get_ticks() + random.randint(MUD_MIN_MS, MUD_MAX_MS)
     spaghetti_next = pygame.time.get_ticks() + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
+    ghost_next     = pygame.time.get_ticks() + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
     particles = []
 
 # ----- ZEBRA TIMER -----
@@ -1331,6 +1453,8 @@ def main():
     finish_line = None
     finish_line_spawned = False
     auto_flying = False
+    bonus_notification_until = 0
+    bonus_notification_points = 0
 
  # ====== AGGIUNGI QUESTO BLOCO DOPO L'INIZIALIZZAZIONE DELLE VARIABILI ======
     # Inizializzazione nuvole
@@ -1438,6 +1562,7 @@ def main():
                             spaghetti_until = 0
                             finish_line = None
                             finish_line_spawned = False
+                            bonus_notification_until = 0
                             # Aumenta difficoltà base per la prossima partita
                             base_speed = min(6, base_speed + 0.5)
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
@@ -1487,6 +1612,7 @@ def main():
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                             spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                             mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+                            ghost_next = now + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             ice_until = 0                                                      # <-- AGGIUNTO
@@ -1497,6 +1623,7 @@ def main():
                             particles.clear(); playing = True
                             finish_line = None; finish_line_spawned = False
                             auto_flying = False
+                            bonus_notification_until = 0
                         elif event.key == pygame.K_o:  # <-- NUOVO: torna al menu selezione
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora O finché non sono passati 2 s
@@ -1608,6 +1735,7 @@ def main():
                             debt_next = now + random.randint(DEBT_MIN_MS, DEBT_MAX_MS)
                             spaghetti_next = now + random.randint(SPAGHETTI_MIN_MS, SPAGHETTI_MAX_MS)
                             mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+                            ghost_next = now + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
                             zebra_next_min = now + 60_000
                             zebra_until = 0; zebra_pending = False
                             ice_until = 0                                                      # <-- AGGIUNTO
@@ -1771,6 +1899,9 @@ def main():
                 elif now >= mud_next:
                     pipes.append(BigBallOfMudPipe(WIDTH))
                     mud_next = now + random.randint(MUD_MIN_MS, MUD_MAX_MS)
+                elif now >= ghost_next:
+                    pipes.append(GhostPipe(WIDTH, now))
+                    ghost_next = now + random.randint(GHOST_MIN_MS, GHOST_MAX_MS)
                 else:
                     pipes.append(Pipe(WIDTH, gap=current_gap))
 
@@ -1779,7 +1910,8 @@ def main():
 
                 # 1. Collisione con i tubi
                 for p in pipes[:]:
-                    if p.collide(bird):
+                    # Ghost pipe NON fa danno
+                    if not getattr(p, 'is_ghost', False) and p.collide(bird):
                         collided_this_frame = True
                         break
                 
@@ -1833,6 +1965,11 @@ def main():
                             elif getattr(p, 'is_golden', False):
                                 if lives < MAX_LIVES:
                                     lives += 1
+                                else:  # <-- AGGIUNTO: già a MAX_LIVES, converti in punti
+                                    bonus_pts = BONUS_POINTS_PER_LEVEL * score_lvl
+                                    score += bonus_pts
+                                    bonus_notification_points = bonus_pts
+                                    bonus_notification_until = now + BONUS_NOTIFICATION_MS
                                 S_GOLDEN.play()
                                 flash_until = now + FLASH_MS
                             elif getattr(p, 'is_ice', False):
@@ -1857,6 +1994,10 @@ def main():
                                 pts = SPAGHETTI_POINTS
                                 spaghetti_until = now + SPAGHETTI_DURATION_MS
                                 S_SPAGHETTI.play()
+                                flash_until = now + FLASH_MS
+                            elif getattr(p, 'is_ghost', False):
+                                pts = GHOST_POINTS
+                                S_GHOST.play()
                                 flash_until = now + FLASH_MS                            
                             else:
                                 S_POINT.play()
@@ -1871,11 +2012,20 @@ def main():
                             break
 
             # Gestione punti vita extra
+            # Gestione punti vita extra
             if score >= next_life_threshold:
                 if lives < MAX_LIVES:
                     lives += 1
                     if S_LIFEUP:
                         S_LIFEUP.play()
+                else:  # <-- AGGIUNTO: già a MAX_LIVES, converti in punti
+                    bonus_pts = BONUS_POINTS_PER_LEVEL * score_lvl
+                    score += bonus_pts
+                    bonus_notification_points = bonus_pts
+                    bonus_notification_until = now + BONUS_NOTIFICATION_MS
+                    if S_LIFEUP:  # Stesso suono (riutilizzo)
+                        S_LIFEUP.play()
+                    flash_until = now + FLASH_MS  # Flash visivo
                 tn += 1
                 next_life_threshold = 5 * tn * (tn + 1) // 2
 
@@ -1938,7 +2088,10 @@ def main():
                 cloud.draw(WIN)
                 
             for p in pipes:
-                p.draw(WIN)
+                if getattr(p, 'is_ghost', False):
+                    p.draw(WIN, current_time=now)
+                else:
+                    p.draw(WIN)
             if finish_line:
                finish_line.draw(WIN)
             bird.draw(WIN)
@@ -1950,13 +2103,18 @@ def main():
                 p.draw(WIN)
             if now < zebra_until:
                 draw_zebra_active(WIN, zebra_until - now)
+                draw_zebra_indicator(WIN, bird.x, bird.y, bird.size)
             if now < ice_until:
                 draw_ice_active(WIN, ice_until - now)
+                draw_ice_indicator(WIN, bird.x, bird.y, bird.size)
             if now < debt_until:
                 draw_debt_indicator(WIN, bird.x, bird.y, bird.size)
             if now < spaghetti_until:
                 draw_spaghetti_active(WIN, spaghetti_until - now)
                 draw_spaghetti_indicator(WIN, bird.x, bird.y, bird.size)
+            if now < bonus_notification_until:  # <-- AGGIUNTO
+                draw_bonus_notification(WIN, bonus_notification_points, 
+                                       bird.x, bird.y, bird.size)                         
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
                 draw_debug_info(WIN, base_speed, speed_lvl,

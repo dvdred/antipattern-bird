@@ -4,6 +4,7 @@ Simple python Game (Flappy Bird Like)
 ![Intro](https://github.com/dvdred/antipattern-bird/raw/refs/heads/stable/demo00.png)
 ![Options](https://github.com/dvdred/antipattern-bird/raw/refs/heads/stable/demo01.png)
 ![Game](https://github.com/dvdred/antipattern-bird/raw/refs/heads/stable/demo02.png)
+![Win](https://github.com/dvdred/antipattern-bird/raw/refs/heads/stable/demo03.png)
 
 An addictive, Python-powered Flappy-style mini-game with rainbow & zebra power-ups, customizable bird, lives system and 4-min speed-run victory.
 
@@ -80,6 +81,11 @@ Before each game, you'll see a **customization menu** where you can choose:
 
 > Useful for understanding the difficulty curve and optimizing your strategy!
 
+**AUDIO Mode** (keyboard letter `A` or mouse click)
+- Toggles sound effects ON/OFF
+- Visual indicator: 🔊 (ON) or 🔇 (OFF)
+- Useful for playing in quiet environments!
+
 Press `SPACE` to confirm and start the game with your chosen appearance!
 
 > **Note**: Your selection is remembered during the current session. After a Game Over, press `O` to return to this menu and change your bird. After winning, you'll automatically return here with increased difficulty.
@@ -118,49 +124,61 @@ Score: 42      ❤ ❤ ❤      Level 1
 ### Special Pipes
 
 **🌈 RAINBOW** (vertical colored stripes)  
-- Grants instant **3 pts** × level multiplier
 - Triggers a white flash and cheerful "bling" sound
-- Appears randomly every 20-45 seconds
+- Points **3 pts** × level multiplier
+- Spawn: Very Common (20-45 seconds)
 
 **🦓 ZEBRA** (black/white vertical stripes)  
-- Grants **2 pts** × level multiplier
 - Activates **ZEBRA-SPEED mode** for 8 seconds:
   - Everything scrolls **1.5× faster**
-  - All points earned are **doubled** (×2)
+  - All POINTS earned are **DOUBLED** (×2)
   - A countdown timer appears at the top
-- Appears once per minute
+- Points **2 pts** × level multiplier
+- Spawn: once per minute
 
 **🧊 ICE** (white/blue pipe)  
 - Activates **ICE-SLOW mode** for 8 seconds:
   - Everything scrolls **0.5× slower**
   - A countdown timer appears at the top
-- Appears randomly every 60-75 seconds
+- Spawn: Common-Medium (30-60 seconds)
 
 **🗿 LEGACY** (dark brown pipe)  
 - Grants instant **4 pts** × level multiplier
-- Appears randomly every 60-80 seconds
+- Smaller vertical gap size (-15px)
+- Spawn: Medium (65-80 seconds)
 
-**🪨​ DEBT** (white/blue pipe)
-- Grants instant **5 pts** × level multiplier  
+**🪨​ DEBT** (dark gray pipe with ⚓ anchor icon)
 - Activates **TECH-DEBT mode** for 8 seconds:
   - Gravity malus **20% heavier**
   - A anchor appears over the bird
-- Appears randomly every 45-70 seconds
+- Points **5 pts** × level multiplier  
+- Spawn: Medium (50-70 seconds)
 
 **🍝 Spaghetti** (animated red/yellow pipe)
-- Effect: Reverses controls for a few seconds (Jump descends instead of ascends, and gravity is reversed for that time)
+- Effect: Reverses controls and gravity for **6 seconds** (Jump descends instead of ascends, and gravity is reversed for that time)
 - Visual: Two-tone yellow and red wavy/intertwined stripes similar to those on barber poles
-- Points: +7
-- Spawn: Medium-rare (70-100 seconds)
+- Points **7 pts** × level multiplier 
+- Spawn: Medium-Rare (75-100 seconds)
+
+**👻 GHOST** (semi-transparent light blue pipe)
+- **Memory test challenge:**
+  - Appears semi-transparent (30% opacity) for **2 seconds**
+  - Then becomes **completely invisible** but still solid for scoring
+  - You can **pass through it without damage** (walls don't hurt)
+  - But you **must pass through the gap** to collect points
+- Points **3 pts** × level multiplier
+- Spawn: Common (40-45 seconds)
 
 **💩​ MUD** (brown/yellow pipe) [BOSS]
-- Grants instant **15 pts** × level multiplier  
 - Big size Pipe
-- Appears at the end of 2° and 3° lvl
+- **Aim Challenge**
+  - Stay low and hope in 
+- Points **15 pts** × level multiplier  
+- Spawn: at the end of 2° and 3° lvl
 
 **🪙 GOLDEN** (gold pipe)
-- +1 Life
-- Appears randomly every 180-210 seconds
+- +1 Life (or **+10 pts × level** if already at 6 lives)
+- Spawn: One (180-210 seconds)
 
 ### Extra Lives
 
@@ -168,6 +186,12 @@ Every triangular-number score target awards **+1 life** (up to maximum 6):
 - 5, 15, 30, 50, 75, 105, 140, 180, 225...
 
 When you collect a life, you'll hear a happy "power-up" sound! 🎵
+
+**Life Overflow Bonus** ⭐  
+When you already have **6 lives** (maximum), extra lives are converted to **bonus points**:
+- Formula: **+10 pts × current level**
+- Example: At Level 3, you get **+30 pts** instead of a life
+- A popup with ⭐ emoji shows the bonus for 2 seconds
 
 ### Level Progression
 
@@ -230,8 +254,10 @@ When you reach the **4-minute mark**:
 - 🗿​ LegacyCode Pipe ( https://freesound.org/people/qubodup/sounds/743248/ )
 - 🪨 Tech Debt Pipe ( https://freesound.org/people/joseegn/sounds/752434/ )
 - 🍝 Spaghetti Pipe ( https://freesound.org/people/plagasRZ/sounds/326349/ )
+- 👻​ Ghost Pipe ( https://freesound.org/people/Beast_Toil/sounds/249413/ )
 - 💩 BBall of Mud Pipe ( https://freesound.org/people/Breviceps/sounds/445117/ )
 - 🏆​ Victory! ( https://freesound.org/people/Victor_Natas/sounds/741118/ )
+
 > Sounds play at 60% volume by default. Make sure your system volume is comfortable!
 
 ## Technical Features
