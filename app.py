@@ -113,6 +113,11 @@ RAINBOW_POINTS = 3
 RAINBOW_COLORS = [(255,0,0), (255,127,0), (255,255,0),
                   (0,255,0), (0,0,255), (75,0,130)]
 
+# ---------- BONUS NOTIFICATION ----------
+BONUS_NOTIFICATION_MS = 2_000     # 2 secondi
+BONUS_POINTS_PER_LEVEL = 10       # punti × livello quando vite = max
+BONUS_NOTIFICATION_EMOJI = "⭐"   # Star, extra points
+
 ZEBRA_COLORS = [(0,0,0), (255,255,255)]
 ZEBRA_DURATION_MS = 8_000
 SPEED_MULTIPLIER = 1.5
@@ -224,7 +229,8 @@ def emoji_font(size, scale=None):
                 fallback_map = {
                     "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
                     "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
-                     "⚓": "[#]", "→": ">", "🦓": "[ZB]" 
+                    "⚓": "[#]", "→": ">", "🦓": "[ZB]",
+                    "⭐": "[$]"
                 }
                 fallback_text = fallback_map.get(text, "?")
                 big = fallback_font.render(fallback_text, antialias, color, background)
@@ -988,7 +994,7 @@ def draw_win_screen(surf, sc, bonus):
     txt_sc = font_med.render(f"Points: {sc}  (bonus {bonus})", True, (0, 0, 0))
     rect_sc = txt_sc.get_rect(center=(WIDTH//2, HEIGHT//2 - 45))
     surf.blit(txt_sc, rect_sc)
-    txt3 = font_med.render("SPACE = continue    Q = quit", True, (0, 0, 0))
+    txt3 = font_med.render("SPACE = continue (+speed)   Q = quit", True, (0, 0, 0))
     rect3 = txt3.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))
     surf.blit(txt3, rect3)
 
@@ -1244,6 +1250,23 @@ def draw_ice_indicator(surf, bird_x, bird_y, bird_size):
     # Posiziona SOPRA il bird, centrato orizzontalmente
     surf.blit(icon, (bird_x + bird_size // 2 - icon.get_width() // 2, bird_y - icon.get_height() - 5))
 
+def draw_bonus_notification(surf, points, bird_x, bird_y, bird_size):
+    """Mostra emoji + punti bonus quando MAX_LIVES è raggiunto"""
+    font_emoji = emoji_font(24)
+    font_text = pygame.font.SysFont("ubuntumono", 20, bold=True) or pygame.font.SysFont(None, 20)
+    
+    # Emoji
+    icon = font_emoji.render(BONUS_NOTIFICATION_EMOJI, True, (255, 215, 0))  # Oro
+    # Testo punti
+    text = font_text.render(f"+{points}", True, (255, 215, 0))
+    
+    # Posiziona a DESTRA del bird (vicino al bird, ben visibile)
+    icon_x = bird_x + bird_size + 10
+    icon_y = bird_y + bird_size // 2 - icon.get_height() // 2
+    
+    surf.blit(icon, (icon_x, icon_y))
+    surf.blit(text, (icon_x + icon.get_width() + 5, icon_y + 5))
+
 def draw_debug_info(surf, base_speed, speed_lvl, zebra_active, ice_active, debt_active, spaghetti_active, cur_speed, game_time_ms, pipe_gap, gravity_mult):
     """Mostra informazioni di debug sulla velocità, gravità e tempo di gioco"""
     font_debug = pygame.font.SysFont("ubuntumono", 18) or pygame.font.SysFont("Arial", 18) or pygame.font.SysFont(None, 18)
@@ -1430,6 +1453,8 @@ def main():
     finish_line = None
     finish_line_spawned = False
     auto_flying = False
+    bonus_notification_until = 0
+    bonus_notification_points = 0
 
  # ====== AGGIUNGI QUESTO BLOCO DOPO L'INIZIALIZZAZIONE DELLE VARIABILI ======
     # Inizializzazione nuvole
@@ -1537,6 +1562,7 @@ def main():
                             spaghetti_until = 0
                             finish_line = None
                             finish_line_spawned = False
+                            bonus_notification_until = 0
                             # Aumenta difficoltà base per la prossima partita
                             base_speed = min(6, base_speed + 0.5)
                         elif event.key in (pygame.K_q, pygame.K_ESCAPE):
@@ -1597,6 +1623,7 @@ def main():
                             particles.clear(); playing = True
                             finish_line = None; finish_line_spawned = False
                             auto_flying = False
+                            bonus_notification_until = 0
                         elif event.key == pygame.K_o:  # <-- NUOVO: torna al menu selezione
                             if not won_waiting and now - game_over_start < GAME_OVER_WAIT_MS:
                                 continue   # ignora O finché non sono passati 2 s
@@ -1938,6 +1965,11 @@ def main():
                             elif getattr(p, 'is_golden', False):
                                 if lives < MAX_LIVES:
                                     lives += 1
+                                else:  # <-- AGGIUNTO: già a MAX_LIVES, converti in punti
+                                    bonus_pts = BONUS_POINTS_PER_LEVEL * score_lvl
+                                    score += bonus_pts
+                                    bonus_notification_points = bonus_pts
+                                    bonus_notification_until = now + BONUS_NOTIFICATION_MS
                                 S_GOLDEN.play()
                                 flash_until = now + FLASH_MS
                             elif getattr(p, 'is_ice', False):
@@ -1980,11 +2012,20 @@ def main():
                             break
 
             # Gestione punti vita extra
+            # Gestione punti vita extra
             if score >= next_life_threshold:
                 if lives < MAX_LIVES:
                     lives += 1
                     if S_LIFEUP:
                         S_LIFEUP.play()
+                else:  # <-- AGGIUNTO: già a MAX_LIVES, converti in punti
+                    bonus_pts = BONUS_POINTS_PER_LEVEL * score_lvl
+                    score += bonus_pts
+                    bonus_notification_points = bonus_pts
+                    bonus_notification_until = now + BONUS_NOTIFICATION_MS
+                    if S_LIFEUP:  # Stesso suono (riutilizzo)
+                        S_LIFEUP.play()
+                    flash_until = now + FLASH_MS  # Flash visivo
                 tn += 1
                 next_life_threshold = 5 * tn * (tn + 1) // 2
 
@@ -2071,6 +2112,9 @@ def main():
             if now < spaghetti_until:
                 draw_spaghetti_active(WIN, spaghetti_until - now)
                 draw_spaghetti_indicator(WIN, bird.x, bird.y, bird.size)
+            if now < bonus_notification_until:  # <-- AGGIUNTO
+                draw_bonus_notification(WIN, bonus_notification_points, 
+                                       bird.x, bird.y, bird.size)                         
             if debug_mode:
                 current_gap = 180 if score_lvl == 1 else (165 if score_lvl == 2 else 150)
                 draw_debug_info(WIN, base_speed, speed_lvl,

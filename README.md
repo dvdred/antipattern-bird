@@ -177,7 +177,7 @@ Score: 42      ❤ ❤ ❤      Level 1
 - Spawn: at the end of 2° and 3° lvl
 
 **🪙 GOLDEN** (gold pipe)
-- +1 Life
+- +1 Life (or **+10 pts × level** if already at 6 lives)
 - Spawn: One (180-210 seconds)
 
 ### Extra Lives
@@ -186,6 +186,12 @@ Every triangular-number score target awards **+1 life** (up to maximum 6):
 - 5, 15, 30, 50, 75, 105, 140, 180, 225...
 
 When you collect a life, you'll hear a happy "power-up" sound! 🎵
+
+**Life Overflow Bonus** ⭐  
+When you already have **6 lives** (maximum), extra lives are converted to **bonus points**:
+- Formula: **+10 pts × current level**
+- Example: At Level 3, you get **+30 pts** instead of a life
+- A popup with ⭐ emoji shows the bonus for 2 seconds
 
 ### Level Progression
 

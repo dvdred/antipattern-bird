@@ -1109,5 +1109,26 @@ class TestParticle(unittest.TestCase):
         self.assertEqual(particle.x, initial_x + 2)
         self.assertEqual(particle.y, initial_y - 1)
 
+class TestDrawBonusNotification(unittest.TestCase):
+    """Test per la funzione draw_bonus_notification"""
+    def test_draw_bonus_notification_called(self):
+        surface = Mock()
+        points = 20
+        bird_x, bird_y, bird_size = 100, 100, 20
+
+        draw_bonus_notification(surface, points, bird_x, bird_y, bird_size)
+
+        surface.blit.assert_called()
+
+class TestBonusPointsConstants(unittest.TestCase):
+    """Test per le costanti bonus punti"""
+    def test_bonus_points_per_level_constant(self):
+        """Test che BONUS_POINTS_PER_LEVEL sia definito"""
+        self.assertEqual(BONUS_POINTS_PER_LEVEL, 10)
+    
+    def test_bonus_notification_ms_constant(self):
+        """Test che BONUS_NOTIFICATION_MS sia definito"""
+        self.assertEqual(BONUS_NOTIFICATION_MS, 2_000)
+
 if __name__ == '__main__':
     unittest.main()
