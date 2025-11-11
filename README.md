@@ -270,6 +270,41 @@ When you reach the **4-minute mark**:
 - Pause functionality maintains game state
 - Debug Overlay
 
+## Contributing
+
+We welcome contributions! 🎉
+
+### Ways to Contribute
+
+- 🐛 **Report bugs** - Use our [Bug Report template](.github/ISSUE_TEMPLATE/bug_report.md)
+- ✨ **Suggest features** - Use our [Feature Request template](.github/ISSUE_TEMPLATE/feature_request.md)
+- 💻 **Submit code** - Follow our [Contributing Guidelines](CONTRIBUTING.md)
+- 📝 **Improve docs** - Documentation PRs are always welcome
+
+### Quick Links
+
+- [Contributing Guidelines](CONTRIBUTING.md) - Development setup, coding standards, PR process
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community standards and expectations
+- [Pull Request Template](.github/pull_request_template.md) - Template for submitting PRs
+- [Issue Templates](.github/ISSUE_TEMPLATE/) - Report bugs or request features
+
+### Development Setup
+
+```bash
+git clone https://github.com/dvdred/antipattern-bird.git
+cd antipattern-bird
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
+### Running Tests
+```
+python -m unittest test_app.py
+```
+
+See CONTRIBUTING.md for detailed guidelines on adding new features, pipe types, and more.
+
 ## Credits
 
 - **Made with 💜 by** dvdred@gmail.com  

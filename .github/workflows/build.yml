@@ -37,7 +37,7 @@ jobs:
           python-version: '3.11'
       - run: pip install pyinstaller pillow
       - run: pip install -r requirements.txt
-      - run: python -c "from PIL import Image; img = Image.open('icon32.png'); img.save('icon.ico', format='ICO')"
+      - run: python -c "from PIL import Image; img = Image.open('assets/icon32.png'); img.save('icon.ico', format='ICO')"
       - run: >
           pyinstaller --onefile --noconsole
           --add-data "assets;assets"
