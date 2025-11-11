@@ -23,22 +23,22 @@ def get_resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-icon_path       = get_resource_path('icon32.png')
-jump_sound      = get_resource_path('jump.wav')
-point_sound     = get_resource_path('point.wav')
-rainbow_sound   = get_resource_path('rainbow.wav')
-lifeup_sound    = get_resource_path('lifeup.wav')
-lifedown_sound  = get_resource_path('lifedown.wav')
-golden_sound    = get_resource_path('golden.wav')
-ice_sound       = get_resource_path('ice.wav')
-legacy_sound    = get_resource_path('legacy.wav')
-debt_sound      = get_resource_path('debt.wav')
-spaghetti_sound = get_resource_path('spaghetti.wav')
-mud_sound       = get_resource_path('mud.wav')
-ghost_sound     = get_resource_path('ghost.wav')
-win_sound       = get_resource_path('win.wav')
-font_emoji      = get_resource_path('DejaVuSansMono.ttf')
-font_emoji_ext  = get_resource_path('NotoColorEmoji.ttf')
+icon_path       = get_resource_path('assets/icon32.png')
+jump_sound      = get_resource_path('assets/jump.wav')
+point_sound     = get_resource_path('assets/point.wav')
+rainbow_sound   = get_resource_path('assets/rainbow.wav')
+lifeup_sound    = get_resource_path('assets/lifeup.wav')
+lifedown_sound  = get_resource_path('assets/lifedown.wav')
+golden_sound    = get_resource_path('assets/golden.wav')
+ice_sound       = get_resource_path('assets/ice.wav')
+legacy_sound    = get_resource_path('assets/legacy.wav')
+debt_sound      = get_resource_path('assets/debt.wav')
+spaghetti_sound = get_resource_path('assets/spaghetti.wav')
+mud_sound       = get_resource_path('assets/mud.wav')
+ghost_sound     = get_resource_path('assets/ghost.wav')
+win_sound       = get_resource_path('assets/win.wav')
+font_emoji      = get_resource_path('assets/DejaVuSansMono.ttf')
+font_emoji_ext  = get_resource_path('assets/NotoColorEmoji.ttf')
 
 # ---------- config ----------
 EMOJI_SCALE = 0.25          # 1.0 = nativo, 0.25 → 1/4, 1.5 → +50 %
@@ -958,6 +958,14 @@ def draw_score(surf, score):
     surf.blit(pygame.font.SysFont(None, 36).render(f"Score: {score}", True, (0,0,0)),
               (WIDTH-150, 10))
 
+def draw_tier(surf, tier):
+    font_emoji = emoji_font(20)
+    font_text = pygame.font.SysFont(None, 28)
+    emoji = font_emoji.render("🏆", True, (255, 215, 0))
+    text = font_text.render(f"x{tier}", True, (255, 140, 0))
+    surf.blit(emoji, (WIDTH - 150, 45))
+    surf.blit(text, (WIDTH - 120, 48))
+
 def draw_lives(surf, lives):
     surf.blit((pygame.font.Font(font_emoji, 28) or pygame.font.SysFont(None, 28)).render("❤ "*lives, True, (255,0,0)),
               (10, 10))
@@ -966,37 +974,181 @@ def draw_level(surf, lvl):
     txt = pygame.font.SysFont(None, 32).render(f"Level {lvl}", True, (0,0,0))
     surf.blit(txt, (10, 50))
 
-def draw_game_over(surf, best, score, bonus_score):
-    font_big   = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("Arial", 48) or pygame.font.SysFont(None, 48)
-    font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont("Arial", 24) or pygame.font.SysFont(None, 24)
-    txt1 = font_big.render("Game Over", True, (255, 0, 0))
-    rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 120))
-    surf.blit(txt1, rect1)
-    txt_scorelvl = font_big.render(f"Bonus: {bonus_score}", True, (0, 0, 0))
-    rect_scorelvl = txt_scorelvl.get_rect(center=(WIDTH//2, HEIGHT//2 - 70))
-    surf.blit(txt_scorelvl, rect_scorelvl)
-    txt_score = font_big.render(f"Score: {score}", True, (0, 0, 0))
-    rect_score = txt_score.get_rect(center=(WIDTH//2, HEIGHT//2 - 20))
-    surf.blit(txt_score, rect_score)
-    txt_best = font_big.render(f"Best: {best}", True, (0, 0, 0))
-    rect_best = txt_best.get_rect(center=(WIDTH//2, HEIGHT//2 + 30))
-    surf.blit(txt_best, rect_best)
-    txt3 = font_small.render("SPACE=restart  O=change bird  Q=quit", True, (0, 0, 0))
-    rect3 = txt3.get_rect(center=(WIDTH//2, HEIGHT//2 + 70))
-    surf.blit(txt3, rect3)
+def draw_game_over(surf, base_pts, lvl_bonus, subtotal, tier_mult, final_pts, best_pts):
+    """
+    Schermata game over con breakdown dettagliato:
+    - base_pts: punteggio prima del bonus livello
+    - lvl_bonus: bonus livello (0, 15 o 30)
+    - subtotal: base + bonus (prima di tier)
+    - tier_mult: moltiplicatore tier
+    - final_pts: punteggio finale (dopo tier)
+    - best_pts: record
+    """
+    # Font
+    font_title = pygame.font.SysFont("ubuntumono", 56, bold=True) or pygame.font.SysFont(None, 56)
+    font_big = pygame.font.SysFont("ubuntumono", 36, bold=True) or pygame.font.SysFont(None, 36)
+    font_med = pygame.font.SysFont("ubuntumono", 28) or pygame.font.SysFont(None, 28)
+    font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont(None, 24)
+    
+    y_pos = 80
+    
+    # ===== TITOLO =====
+    title = font_title.render("GAME OVER", True, (180, 0, 0))
+    surf.blit(title, title.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 90
+    
+    # ===== BREAKDOWN PUNTEGGIO =====
+    # Base Score
+    txt_base = font_med.render(f"Base Score: {base_pts}", True, (50, 50, 50))
+    surf.blit(txt_base, txt_base.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 40
+    
+    # Level Bonus (solo se > 0)
+    if lvl_bonus > 0:
+        level_text = "Level 3 Reached" if lvl_bonus == 30 else "Level 2 Reached"
+        txt_level = font_med.render(f"Level Bonus: +{lvl_bonus} ({level_text})", True, (100, 100, 0))
+        surf.blit(txt_level, txt_level.get_rect(center=(WIDTH//2, y_pos)))
+        y_pos += 50
+    else:
+        txt_level = font_med.render("Level Bonus: +0 (Level 1)", True, (100, 100, 100))
+        surf.blit(txt_level, txt_level.get_rect(center=(WIDTH//2, y_pos)))
+        y_pos += 50
+    
+    # Separatore
+    pygame.draw.line(surf, (100, 100, 100), (WIDTH//2 - 120, y_pos), (WIDTH//2 + 120, y_pos), 2)
+    y_pos += 25
+    
+    # Subtotal
+    txt_subtotal = font_med.render(f"Subtotal: {subtotal}", True, (70, 70, 70))
+    surf.blit(txt_subtotal, txt_subtotal.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 50
+    
+    # Tier Multiplier
+    txt_tier = font_big.render(f"Tier x{tier_mult}", True, (255, 140, 0))
+    surf.blit(txt_tier, txt_tier.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 60
+    
+    # Separatore
+    pygame.draw.line(surf, (100, 100, 100), (WIDTH//2 - 120, y_pos), (WIDTH//2 + 120, y_pos), 3)
+    y_pos += 30
+    
+    # Final Score
+    txt_final_label = font_small.render("FINAL SCORE", True, (0, 0, 0))
+    surf.blit(txt_final_label, txt_final_label.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 35
+    
+    txt_final = font_title.render(f"{final_pts}", True, (180, 0, 0))
+    surf.blit(txt_final, txt_final.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 70
+    
+    # Best Score
+    best_color = (0, 150, 0) if final_pts >= best_pts else (100, 100, 100)
+    best_prefix = "NEW RECORD! " if final_pts >= best_pts else ""
+    txt_best = font_small.render(f"{best_prefix}Best: {best_pts}", True, best_color)
+    surf.blit(txt_best, txt_best.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 60
+    
+    # ===== ISTRUZIONI =====
+    txt_inst1 = font_small.render("SPACE = restart   O = change bird", True, (0, 0, 0))
+    surf.blit(txt_inst1, txt_inst1.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 30
+    
+    txt_inst2 = font_small.render("Q = quit", True, (0, 0, 0))
+    surf.blit(txt_inst2, txt_inst2.get_rect(center=(WIDTH//2, y_pos)))
 
-def draw_win_screen(surf, sc, bonus):
-    font_big = pygame.font.SysFont("ubuntumono", 48) or pygame.font.SysFont("Arial", 48) or pygame.font.SysFont(None, 48)
-    font_med = pygame.font.SysFont("ubuntumono", 32) or pygame.font.SysFont("Arial", 32) or pygame.font.SysFont(None, 32)
-    txt1 = font_big.render("YOU WON!", True, (0, 85, 0))
-    rect1 = txt1.get_rect(center=(WIDTH//2, HEIGHT//2 - 100))
-    surf.blit(txt1, rect1)
-    txt_sc = font_med.render(f"Points: {sc}  (bonus {bonus})", True, (0, 0, 0))
-    rect_sc = txt_sc.get_rect(center=(WIDTH//2, HEIGHT//2 - 45))
-    surf.blit(txt_sc, rect_sc)
-    txt3 = font_med.render("SPACE = continue (+speed)   Q = quit", True, (0, 0, 0))
-    rect3 = txt3.get_rect(center=(WIDTH//2, HEIGHT//2 + 20))
-    surf.blit(txt3, rect3)
+def draw_win_screen(surf, base_pts, win_bonus_base, win_bonus_lives, subtotal, tier_mult, final_pts, best_pts):
+    """
+    Schermata vittoria con breakdown dettagliato:
+    - base_pts: punteggio prima del bonus vittoria
+    - win_bonus_base: bonus base vittoria (50)
+    - win_bonus_lives: bonus extra se MAX_LIVES (100 o 0)
+    - subtotal: base + bonus (prima di tier)
+    - tier_mult: moltiplicatore tier
+    - final_pts: punteggio finale (dopo tier)
+    - best_pts: record
+    """
+    # Font
+    font_title = pygame.font.SysFont("ubuntumono", 56, bold=True) or pygame.font.SysFont(None, 56)
+    font_big = pygame.font.SysFont("ubuntumono", 36, bold=True) or pygame.font.SysFont(None, 36)
+    font_med = pygame.font.SysFont("ubuntumono", 28) or pygame.font.SysFont(None, 28)
+    font_small = pygame.font.SysFont("ubuntumono", 24) or pygame.font.SysFont(None, 24)
+    font_emoji_big = emoji_font(40)
+    
+    y_pos = 80  # Posizione verticale iniziale
+    
+    # ===== TITOLO =====
+    trophy = font_emoji_big.render("🏆", True, (255, 215, 0))
+    title = font_title.render("YOU WON!", True, (0, 120, 0))
+    
+    # Centra titolo con emoji ai lati
+    title_width = trophy.get_width() + title.get_width() + trophy.get_width() + 20
+    start_x = (WIDTH - title_width) // 2
+    surf.blit(trophy, (start_x, y_pos))
+    surf.blit(title, (start_x + trophy.get_width() + 10, y_pos + 5))
+    surf.blit(trophy, (start_x + trophy.get_width() + title.get_width() + 20, y_pos))
+    
+    y_pos += 90
+    
+    # ===== BREAKDOWN PUNTEGGIO =====
+    # Base Score
+    txt_base = font_med.render(f"Base Score: {base_pts}", True, (50, 50, 50))
+    surf.blit(txt_base, txt_base.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 40
+    
+    # Win Bonus
+    bonus_text = f"Win Bonus: +{win_bonus_base}"
+    if win_bonus_lives > 0:
+        bonus_text += f" + {win_bonus_lives} (FULL ❤)"
+
+    # ========== USA FONT CHE SUPPORTA EMOJI ==========
+    font_bonus = pygame.font.Font(font_emoji, 28)  # DejaVuSansMono supporta ❤
+    txt_bonus = font_bonus.render(bonus_text, True, (0, 100, 0))
+    # =================================================
+
+    surf.blit(txt_bonus, txt_bonus.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 50
+    
+    # Separatore
+    pygame.draw.line(surf, (100, 100, 100), (WIDTH//2 - 120, y_pos), (WIDTH//2 + 120, y_pos), 2)
+    y_pos += 25
+    
+    # Subtotal
+    txt_subtotal = font_med.render(f"Subtotal: {subtotal}", True, (70, 70, 70))
+    surf.blit(txt_subtotal, txt_subtotal.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 50
+    
+    # Tier Multiplier
+    txt_tier = font_big.render(f"Tier x{tier_mult}", True, (255, 140, 0))
+    surf.blit(txt_tier, txt_tier.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 60
+    
+    # Separatore
+    pygame.draw.line(surf, (100, 100, 100), (WIDTH//2 - 120, y_pos), (WIDTH//2 + 120, y_pos), 3)
+    y_pos += 30
+    
+    # Final Score (evidenziato)
+    txt_final_label = font_small.render("FINAL SCORE", True, (0, 0, 0))
+    surf.blit(txt_final_label, txt_final_label.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 35
+    
+    txt_final = font_title.render(f"{final_pts}", True, (0, 85, 0))
+    surf.blit(txt_final, txt_final.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 70
+    
+    # Best Score
+    best_color = (200, 0, 0) if final_pts >= best_pts else (100, 100, 100)
+    best_prefix = "NEW RECORD! " if final_pts >= best_pts else ""
+    txt_best = font_small.render(f"{best_prefix}Best: {best_pts}", True, best_color)
+    surf.blit(txt_best, txt_best.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 60
+    
+    # ===== ISTRUZIONI =====
+    txt_inst1 = font_small.render("SPACE = continue (+speed)", True, (0, 0, 0))
+    surf.blit(txt_inst1, txt_inst1.get_rect(center=(WIDTH//2, y_pos)))
+    y_pos += 30
+    
+    txt_inst2 = font_small.render("Q = quit", True, (0, 0, 0))
+    surf.blit(txt_inst2, txt_inst2.get_rect(center=(WIDTH//2, y_pos)))
 
 def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     surf.fill(bg_color)
@@ -1455,6 +1607,17 @@ def main():
     auto_flying = False
     bonus_notification_until = 0
     bonus_notification_points = 0
+    tier = 1
+    base_score_before_win = 0
+    bonus_win_base = 0
+    bonus_win_lives = 0
+    bonus_win_total = 0
+    score_before_tier = 0
+    final_score = 0
+    base_score_before_gameover = 0
+    level_bonus_gameover = 0
+    score_before_tier_gameover = 0
+    final_score_gameover = 0
 
  # ====== AGGIUNGI QUESTO BLOCO DOPO L'INIZIALIZZAZIONE DELLE VARIABILI ======
     # Inizializzazione nuvole
@@ -1541,6 +1704,7 @@ def main():
                         if event.key == pygame.K_SPACE:
                             if now < win_block_until:
                                 continue
+                            tier += 1
                             # Torna al menu di selezione dopo vittoria
                             won_waiting = False
                             waiting_restart = False
@@ -1605,6 +1769,7 @@ def main():
                             next_life_threshold = 5 * tn * (tn + 1) // 2
                             bg_color   = random.choice(LIGHT_COLORS)
                             land_color = random.choice(LAND_COLORS)
+                            tier = 1
                             rainbow_next = now + random.randint(RAINBOW_MIN_MS, RAINBOW_MAX_MS)
                             golden_next = now + random.randint(GOLDEN_MIN_MS, GOLDEN_MAX_MS)  # <-- AGGIUNTO
                             ice_next = now + random.randint(ICE_MIN_MS, ICE_MAX_MS)            # <-- AGGIUNTO
@@ -1639,6 +1804,7 @@ def main():
                             score = 0
                             lives = 3
                             bonus_score = 0
+                            tier = 1
                             base_speed = 2.5
                             won = False
                             won_waiting = False    
@@ -1831,10 +1997,13 @@ def main():
                 # Quando esce dallo schermo, vittoria!
                 if bird.x > WIDTH + bird.size:
                     won = True
-                    bonus_win = BONUS_WIN
-                    if lives == MAX_LIVES:
-                        bonus_win += BONUS_WIN_MAX
-                    score += bonus_win
+                    base_score_before_win = score  # Punteggio base prima bonus vittoria
+                    bonus_win_base = BONUS_WIN     # 50
+                    bonus_win_lives = BONUS_WIN_MAX if lives == MAX_LIVES else 0  # 100 o 0
+                    bonus_win_total = bonus_win_base + bonus_win_lives
+                    score_before_tier = score + bonus_win_total
+                    final_score = score_before_tier * tier
+                    score = final_score
                     if score > best:
                         best = score
                     won_waiting = True
@@ -1931,14 +2100,23 @@ def main():
                         waiting_restart = True
                         game_over_start = now
                         
-                        # Calcolo bonus di fine partita
+                        # ========== SALVA VALORI INTERMEDI ==========
+                        base_score_before_gameover = score  # Punteggio base
+                        
+                        # Calcolo bonus livello
                         lvl_bonus = 0
-                        if speed_lvl >= 2.0:   # Raggiunto il Livello 3
+                        if speed_lvl >= 2.0:   # Livello 3
                             lvl_bonus = 30
-                        elif speed_lvl >= 1.5: # Raggiunto il Livello 2
+                        elif speed_lvl >= 1.5: # Livello 2
                             lvl_bonus = 15
-                        score += lvl_bonus
-                        bonus_score += lvl_bonus
+                        level_bonus_gameover = lvl_bonus
+                        
+                        score_before_tier_gameover = score + lvl_bonus
+                        final_score_gameover = score_before_tier_gameover * tier
+                        
+                        score = final_score_gameover
+                        bonus_score += lvl_bonus  # Mantiene logica esistente
+                        # ===========================================
 
                         if score > best:
                             best = score
@@ -2047,7 +2225,8 @@ def main():
                     cloud.draw(WIN)
                 for cloud in clouds_layer2:
                     cloud.draw(WIN)
-                draw_win_screen(WIN, score, bonus_win)
+                draw_win_screen(WIN, base_score_before_win, bonus_win_base, bonus_win_lives, 
+                    score_before_tier, tier, final_score, best)
             elif waiting_restart:
                 WIN.fill(bg_color)
                 # Disegna nuvole anche nella schermata game over
@@ -2058,7 +2237,8 @@ def main():
                 bird.reset_position()
                 bird.randomize_shape(exclude_current=True)
                 bird.randomize_color(exclude_current=True)
-                draw_game_over(WIN, best, score, bonus_score)
+                draw_game_over(WIN, base_score_before_gameover, level_bonus_gameover, 
+                   score_before_tier_gameover, tier, final_score_gameover, best)
             elif selecting_shape:
                 WIN.fill(bg_color)
                 for cloud in clouds_layer1:
@@ -2099,6 +2279,7 @@ def main():
             draw_score(WIN, score)
             draw_lives(WIN, lives)
             draw_level(WIN, 1 if score_lvl==1 else (2 if score_lvl==2 else 3))
+            draw_tier(WIN, tier)
             for p in particles:
                 p.draw(WIN)
             if now < zebra_until:
