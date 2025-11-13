@@ -37,6 +37,11 @@ spaghetti_sound = get_resource_path('assets/spaghetti.wav')
 mud_sound       = get_resource_path('assets/mud.wav')
 ghost_sound     = get_resource_path('assets/ghost.wav')
 win_sound       = get_resource_path('assets/win.wav')
+intro_music     = get_resource_path('assets/intro.mp3')
+setup_music     = get_resource_path('assets/setup.mp3')
+game_music      = get_resource_path('assets/game.mp3')
+gameover_music  = get_resource_path('assets/gameover.mp3')
+gamewin_music   = get_resource_path('assets/gamewin.mp3')
 font_emoji      = get_resource_path('assets/DejaVuSansMono.ttf')
 #font_emoji_ext  = get_resource_path('assets/NotoColorEmoji.ttf')
 
@@ -73,6 +78,95 @@ S_WIN = pygame.mixer.Sound(win_sound)
 for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_GHOST, S_WIN):
     if snd:
         snd.set_volume(0.5)
+
+# ==================================================================
+#                    MUSIC MANAGER
+# ==================================================================
+
+class MusicManager:
+    """Gestisce le transizioni musicali del gioco"""
+    
+    INTRO = 'intro'
+    SETUP = 'setup'
+    GAME = 'game'
+    GAMEOVER = 'gameover'
+    GAMEWIN = 'gamewin'
+    
+    def __init__(self):
+        self.current_track = None
+        self.enabled = True
+        self.volume = 0.6  # Volume default musica (60%)
+        
+        self.tracks = {
+            self.INTRO: intro_music,
+            self.SETUP: setup_music,
+            self.GAME: game_music,
+            self.GAMEOVER: gameover_music,
+            self.GAMEWIN: gamewin_music
+        }
+        
+    def play(self, track_name, loop=True, fade_ms=500):
+        """
+        Riproduce una traccia musicale
+        
+        Args:
+            track_name: nome della traccia (usa le costanti INTRO, SETUP, etc.)
+            loop: True per loop infinito, False per una volta
+            fade_ms: millisecondi di fade-in
+        """
+        if not self.enabled:
+            return
+            
+        # Se la stessa traccia è già in riproduzione, non fare nulla
+        if self.current_track == track_name and pygame.mixer.music.get_busy():
+            return
+        
+        try:
+            # Ferma la musica corrente con fade-out
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.fadeout(fade_ms // 2)
+                pygame.time.wait(fade_ms // 2)
+            
+            # Carica e riproduci la nuova traccia
+            track_path = self.tracks.get(track_name)
+            if track_path and os.path.exists(track_path):
+                pygame.mixer.music.load(track_path)
+                pygame.mixer.music.set_volume(self.volume)
+                
+                loops = -1 if loop else 0  # -1 = loop infinito, 0 = una volta
+                pygame.mixer.music.play(loops, fade_ms=fade_ms)
+                
+                self.current_track = track_name
+            else:
+                print(f"⚠️ Musica non trovata: {track_path}")
+                
+        except Exception as e:
+            print(f"⚠️ Errore riproduzione musica: {e}")
+    
+    def stop(self, fade_ms=500):
+        """Ferma la musica corrente"""
+        if pygame.mixer.music.get_busy():
+            pygame.mixer.music.fadeout(fade_ms)
+        self.current_track = None
+    
+    def set_volume(self, volume):
+        """Imposta il volume (0.0 - 1.0)"""
+        self.volume = max(0.0, min(1.0, volume))
+        pygame.mixer.music.set_volume(self.volume)
+    
+    def set_enabled(self, enabled):
+        """Abilita/disabilita la musica"""
+        self.enabled = enabled
+        if not enabled:
+            self.stop(fade_ms=200)
+    
+    def pause(self):
+        """Mette in pausa la musica"""
+        pygame.mixer.music.pause()
+    
+    def unpause(self):
+        """Riprende la musica in pausa"""
+        pygame.mixer.music.unpause()
 
 LIGHT_COLORS = [(173, 216, 230), (175, 238, 238), (255, 218, 185),
                 (230, 230, 250), (240, 248, 255)]
@@ -185,7 +279,6 @@ GAME_OVER_WAIT_MS = 2000   # antidolorifico 2 s
 BONUS_WIN = 50
 BONUS_WIN_MAX = 100
 DEBUG_MODE = False
-AUDIO_ENABLED = True
 FLASH_MS = 150
 FLASH_COLOR = (255,255,255)
 
@@ -246,7 +339,7 @@ def emoji_font(size, scale=None):
                         "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
                         "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
                         "⚓": "[#]", "→": ">", "🦓": "[ZB]",
-                        "⭐": "[$]", "🏆": "[T]"
+                        "⭐": "[$]", "🏆": "[T]", "🎵": "[♪]"  # <-- AGGIUNGI
                     }
                     fallback_text = fallback_map.get(text, "?")
                     return fallback_font.render(fallback_text, antialias, color, background)
@@ -1216,7 +1309,7 @@ def draw_start_screen(surf, demo_pipes, demo_land, bg_color):
     pygame.draw.rect(surf, (70, 130, 180), btn, border_radius=10)
     surf.blit(inst, inst.get_rect(center=btn.center))
 
-def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode, audio_enabled):
+def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debug_mode, sfx_enabled, music_enabled):
     surf.fill(bg_color)
     
     font_title = pygame.font.SysFont("ubuntumono", 40, bold=True) or pygame.font.SysFont(None, 40)
@@ -1348,34 +1441,54 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
     surf.blit(letter_d, (debug_btn.centerx - letter_d.get_width() // 2, debug_btn.top - 25))
     # =======================================================================
     
-    # ============ AUDIO MODE: Bottone sotto il debug ============
-    audio_btn = pygame.Rect(WIDTH - 160, 165, 150, 35)  # 65px sotto debug
-    audio_color = (50, 200, 50) if audio_enabled else (200, 50, 50)
-    pygame.draw.rect(surf, audio_color, audio_btn, border_radius=8)
-    
-    # ✅ PERSONALIZZAZIONE 1: Icone diverse ON/OFF
-    audio_icon = "🔊" if audio_enabled else "🔇"
-    audio_status = "ON" if audio_enabled else "OFF"
-    
-    # Usa emoji_font per l'icona + font normale per il testo
-    font_audio_icon = emoji_font(18)  # Font emoji
-    font_audio_text = pygame.font.Font(font_emoji, 18) or font_small  # Font testo
-    
-    # Renderizza icona e testo separatamente
-    icon_surf = font_audio_icon.render(audio_icon, True, (255, 255, 255))
-    text_surf = font_audio_text.render(f" Audio: {audio_status}", True, (255, 255, 255))
-    
-    # Calcola posizioni per centrare entrambi
+    # ============ SFX MODE: Bottone sotto il debug ============
+    sfx_btn = pygame.Rect(WIDTH - 160, 165, 150, 35)  # 65px sotto debug
+    sfx_color = (50, 200, 50) if sfx_enabled else (200, 50, 50)
+    pygame.draw.rect(surf, sfx_color, sfx_btn, border_radius=8)
+
+    sfx_icon = "🔊" if sfx_enabled else "🔇"
+    sfx_status = "ON" if sfx_enabled else "OFF"
+
+    font_sfx_icon = emoji_font(18)
+    font_sfx_text = pygame.font.Font(font_emoji, 18) or font_small
+
+    icon_surf = font_sfx_icon.render(sfx_icon, True, (255, 255, 255))
+    text_surf = font_sfx_text.render(f" SFX: {sfx_status}", True, (255, 255, 255))
+
     total_width = icon_surf.get_width() + text_surf.get_width()
-    start_x = audio_btn.centerx - total_width // 2
-    start_y = audio_btn.centery - max(icon_surf.get_height(), text_surf.get_height()) // 2
-    
+    start_x = sfx_btn.centerx - total_width // 2
+    start_y = sfx_btn.centery - max(icon_surf.get_height(), text_surf.get_height()) // 2
+
     surf.blit(icon_surf, (start_x, start_y))
     surf.blit(text_surf, (start_x + icon_surf.get_width(), start_y))
-    
-    # Tasto A sopra il bottone (centrato)
-    letter_a = font_number.render("A", True, (0, 0, 0))
-    surf.blit(letter_a, (audio_btn.centerx - letter_a.get_width() // 2, audio_btn.top - 25))
+
+    letter_s = font_number.render("S", True, (0, 0, 0))
+    surf.blit(letter_s, (sfx_btn.centerx - letter_s.get_width() // 2, sfx_btn.top - 25))
+    # ==============================================================
+
+    # ============ MUSIC MODE: Bottone sotto SFX ============
+    music_btn = pygame.Rect(WIDTH - 160, 235, 150, 35)  # 70px sotto SFX
+    music_color = (50, 200, 50) if music_enabled else (200, 50, 50)
+    pygame.draw.rect(surf, music_color, music_btn, border_radius=8)
+
+    music_icon = "🎵" if music_enabled else "🔇"
+    music_status = "ON" if music_enabled else "OFF"
+
+    font_music_icon = emoji_font(18)
+    font_music_text = pygame.font.Font(font_emoji, 18) or font_small
+
+    icon_surf_music = font_music_icon.render(music_icon, True, (255, 255, 255))
+    text_surf_music = font_music_text.render(f" Music: {music_status}", True, (255, 255, 255))
+
+    total_width_music = icon_surf_music.get_width() + text_surf_music.get_width()
+    start_x_music = music_btn.centerx - total_width_music // 2
+    start_y_music = music_btn.centery - max(icon_surf_music.get_height(), text_surf_music.get_height()) // 2
+
+    surf.blit(icon_surf_music, (start_x_music, start_y_music))
+    surf.blit(text_surf_music, (start_x_music + icon_surf_music.get_width(), start_y_music))
+
+    letter_m = font_number.render("M", True, (0, 0, 0))
+    surf.blit(letter_m, (music_btn.centerx - letter_m.get_width() // 2, music_btn.top - 25))
     # ==============================================================
     
     # Istruzioni
@@ -1384,10 +1497,10 @@ def draw_shape_selection_menu(surf, bg_color, current_shape, current_color, debu
     hint2 = font_small.render("Press SPACE to start", True, (100, 100, 100))
     surf.blit(hint2, hint2.get_rect(center=(WIDTH//2, HEIGHT - 20)))
     
-    return shape_buttons, color_buttons, debug_btn, audio_btn
+    return shape_buttons, color_buttons, debug_btn, sfx_btn, music_btn
 
-def set_all_sounds_volume(volume):
-    """Imposta il volume di tutti i suoni del gioco"""
+def set_sfx_volume(volume):
+    """Imposta il volume dei sound effects"""
     for snd in (S_JUMP, S_POINT, S_RAINBOW, S_LIFEUP, S_LIFEDOWN, 
                 S_GOLDEN, S_ICE, S_LEGACY, S_DEBT, S_SPAGHETTI, S_MUD, S_GHOST, S_WIN):
         if snd:
@@ -1554,7 +1667,9 @@ def main():
     # Variabili per gestire il tempo di pausa
     pause_start = 0
     total_paused_time = 0
-    
+    music = MusicManager()
+    music.play(MusicManager.INTRO, loop=True)  # Avvia musica intro
+
     def game_time():
         """Restituisce il tempo di gioco escludendo le pause"""
         if paused:
@@ -1573,14 +1688,9 @@ def main():
     waiting_restart  = False
     selecting_shape = False
     debug_mode = False
-    audio_enabled = True
+    sfx_enabled = True
+    music_enabled = True
     
-    # Selezioni correnti nel menu (quelle evidenziate)
-    current_shape_selection = 'random'
-    current_color_selection = 'random'
-    # Selezioni confermate (quelle effettivamente usate in partita)
-    confirmed_shape = 'random'
-    confirmed_color = 'random'
     # Selezioni correnti nel menu (quelle evidenziate)
     current_shape_selection = 'random'
     current_color_selection = 'random'
@@ -1591,7 +1701,8 @@ def main():
     shape_buttons = []
     color_buttons = []
     debug_btn = pygame.Rect(0, 0, 0, 0)
-    audio_btn = pygame.Rect(0, 0, 0, 0)
+    sfx_btn = pygame.Rect(0, 0, 0, 0)
+    music_btn = pygame.Rect(0, 0, 0, 0)
     invuln_time, last_pipe = 0, pygame.time.get_ticks()
     game_over_start = 0   # timestamp game-over
 
@@ -1734,15 +1845,22 @@ def main():
                 if debug_btn.collidepoint(log_x, log_y):
                     debug_mode = not debug_mode
                 # Controlla click su audio mode
-                if audio_btn.collidepoint(log_x, log_y):
-                    audio_enabled = not audio_enabled
-                    set_all_sounds_volume(0.5 if audio_enabled else 0.0)
+                if sfx_btn.collidepoint(log_x, log_y):
+                    sfx_enabled = not sfx_enabled
+                    set_sfx_volume(0.5 if sfx_enabled else 0.0)
+                    
+                # Controlla click su Music mode
+                if music_btn.collidepoint(log_x, log_y):
+                    music_enabled = not music_enabled
+                    music.set_enabled(music_enabled)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_p and playing and not waiting_restart:
                     if not paused:  # Sta per andare in pausa
                         pause_start = pygame.time.get_ticks()
+                        music.pause()  # <-- AGGIUNGI
                     else:  # Sta per uscire dalla pausa
                         total_paused_time += pygame.time.get_ticks() - pause_start
+                        music.unpause()  # <-- AGGIUNGI
                     paused = not paused
                     break
                 
@@ -1753,6 +1871,7 @@ def main():
                                 continue
                             tier += 1
                             # Torna al menu di selezione dopo vittoria
+                            music.play(MusicManager.SETUP, loop=True)
                             won_waiting = False
                             waiting_restart = False
                             total_paused_time = 0
@@ -1811,6 +1930,7 @@ def main():
                                 bird.color = BIRD_COLORS[6]                                
 
                             pipes.clear(); score = 0; lives = 3; bonus_score=0
+                            music.play(MusicManager.GAME, loop=True)
                             base_speed = 2.5  # <-- RESET velocità base dopo game over
                             invuln_time = 0; last_pipe = now; tn = 1
                             next_life_threshold = 5 * tn * (tn + 1) // 2
@@ -1843,6 +1963,7 @@ def main():
                             total_paused_time = 0
                             pause_start = 0
                             selecting_shape = True
+                            music.play(MusicManager.SETUP, loop=True)
                             current_shape_selection = confirmed_shape  # Mantiene l'ultima scelta
                             current_color_selection = confirmed_color  # Mantiene l'ultima scelta
                             bird.reset_position()
@@ -1860,6 +1981,7 @@ def main():
                 else:  # non in attesa: gioco fermo o in corso
                     if not playing and not selecting_shape and event.key == pygame.K_SPACE:
                         selecting_shape = True  # <-- Vai al menu selezione invece di iniziare subito
+                        music.play(MusicManager.SETUP, loop=True)
                     elif selecting_shape:
                         # Navigazione forme (tasti 1-5)
                         if event.key == pygame.K_1:
@@ -1895,10 +2017,15 @@ def main():
                         elif event.key == pygame.K_d:
                             debug_mode = not debug_mode
 
-                        # Toggle Audio Mode
-                        elif event.key == pygame.K_a:
-                            audio_enabled = not audio_enabled
-                            set_all_sounds_volume(0.5 if audio_enabled else 0.0)  # ✅ CORRETTO                            
+                        # Toggle SFX Mode
+                        elif event.key == pygame.K_s:
+                            sfx_enabled = not sfx_enabled
+                            set_sfx_volume(0.5 if sfx_enabled else 0.0)
+
+                        # Toggle Music Mode
+                        elif event.key == pygame.K_m:
+                            music_enabled = not music_enabled
+                            music.set_enabled(music_enabled)                          
 
                         # Conferma con SPACE
                         elif event.key == pygame.K_SPACE:
@@ -1936,6 +2063,7 @@ def main():
                             
                             # Inizia partita
                             playing = True
+                            music.play(MusicManager.GAME, loop=True)
                             bird.reset_position(); pipes.clear(); score = 0; lives = 3
                             invuln_time = 0; last_pipe = now; tn = 1
                             next_life_threshold = 5 * tn * (tn + 1) // 2
@@ -2044,6 +2172,7 @@ def main():
                 # Quando esce dallo schermo, vittoria!
                 if bird.x > WIDTH + bird.size:
                     won = True
+                    music.play(MusicManager.GAMEWIN, loop=False) 
                     base_score_before_win = score  # Punteggio base prima bonus vittoria
                     bonus_win_base = BONUS_WIN     # 50
                     bonus_win_lives = BONUS_WIN_MAX if lives == MAX_LIVES else 0  # 100 o 0
@@ -2146,6 +2275,7 @@ def main():
                         playing = False
                         waiting_restart = True
                         game_over_start = now
+                        music.play(MusicManager.GAMEOVER, loop=False)
                         
                         # ========== SALVA VALORI INTERMEDI ==========
                         base_score_before_gameover = score  # Punteggio base
@@ -2292,8 +2422,8 @@ def main():
                     cloud.draw(WIN)
                 for cloud in clouds_layer2:
                     cloud.draw(WIN)
-                new_shape_btns, new_color_btns, debug_btn, audio_btn = draw_shape_selection_menu(  # <-- MODIFICATO
-                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode, audio_enabled  # <-- AGGIUNTO audio_enabled
+                new_shape_btns, new_color_btns, debug_btn, sfx_btn, music_btn = draw_shape_selection_menu(
+                    WIN, bg_color, current_shape_selection, current_color_selection, debug_mode, sfx_enabled, music_enabled
                 )
                 shape_buttons = new_shape_btns
                 color_buttons = new_color_btns
