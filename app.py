@@ -41,8 +41,9 @@ font_emoji      = get_resource_path('assets/DejaVuSansMono.ttf')
 #font_emoji_ext  = get_resource_path('assets/NotoColorEmoji.ttf')
 
 import platform
-if platform.system() == 'Windows':
-    font_emoji_ext = get_resource_path('assets/TwitterColorEmoji-SVGinOT.ttf')
+IS_WINDOWS = platform.system() == 'Windows'
+if IS_WINDOWS:
+    font_emoji_ext = 'Segoe UI Emoji'  # Font di sistema Windows (no path)
 else:
     font_emoji_ext = get_resource_path('assets/NotoColorEmoji.ttf')
 # ==================================================================
@@ -207,53 +208,92 @@ TEXT_LIST = [
 def emoji_font(size, scale=None):
     """
     Ritorna un oggetto "Font" compatto con pygame che:
-      - carica NotoColorEmoji
+      - carica NotoColorEmoji (o Segoe UI Emoji su Windows)
       - renderizza sempre a EMOJI_BASE_SIZE (128 px nativi)
       - restituisce la superficie ridimensionata a `size` pixel
     Uso esattamente come un font normale:
         font = emoji_font(24)           # 24 px finali
         surf = font.render("💩", True, col)
     """
-    if scale is None:                   # calcola automaticamente
+    if scale is None:
         scale = size / EMOJI_BASE_SIZE
-    loader = pygame.font.Font(font_emoji_ext, EMOJI_BASE_SIZE)
+    
+    # ===== WINDOWS: usa freetype con font di sistema =====
+    if IS_WINDOWS:
+        final_size = int(EMOJI_BASE_SIZE * scale)
+        try:
+            loader = pygame.freetype.SysFont('Segoe UI Emoji', final_size)
+        except:
+            loader = pygame.freetype.Font(None, final_size)
+        
+        class EmojiFontWindows:
+            __slots__ = ("_ldr", "_size")
+            def __init__(self, loader, final_size):
+                self._ldr = loader
+                self._size = final_size
+                
+            def render(self, text, antialias, color, background=None):
+                try:
+                    # freetype.render ritorna (surface, rect)
+                    surf, _ = self._ldr.render(text, fgcolor=color, bgcolor=background)
+                    if surf.get_width() == 0 or surf.get_height() == 0:
+                        raise pygame.error("Zero size")
+                    return surf
+                except:
+                    # Fallback
+                    fallback_font = pygame.font.Font(font_emoji, int(self._size * 0.6))
+                    fallback_map = {
+                        "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
+                        "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
+                        "⚓": "[#]", "→": ">", "🦓": "[ZB]",
+                        "⭐": "[$]", "🏆": "[T]"
+                    }
+                    fallback_text = fallback_map.get(text, "?")
+                    return fallback_font.render(fallback_text, antialias, color, background)
+            
+            @property
+            def size(self):
+                return self._size
+        
+        return EmojiFontWindows(loader, final_size)
+    
+    # ===== LINUX/MAC: codice originale =====
+    else:
+        loader = pygame.font.Font(font_emoji_ext, EMOJI_BASE_SIZE)
 
-    class EmojiFont:
-        __slots__ = ("_ldr", "_sc")
-        def __init__(self, loader, scale):
-            self._ldr, self._sc = loader, scale
-            
-        def render(self, text, antialias, color, background=None):
-            try:
-                big = self._ldr.render(text, antialias, color, background)
-                # ✅ AGGIUNTO: Controlla se il rendering ha prodotto zero width
-                if big.get_width() == 0 or big.get_height() == 0:
-                    raise pygame.error("Zero width/height emoji rendering")
-            except pygame.error:
-                # ✅ FALLBACK: Usa font normale con testo placeholder
-                fallback_font = pygame.font.Font(font_emoji, int(EMOJI_BASE_SIZE * 0.6))
-                # Mappa emoji comuni a caratteri ASCII
-                fallback_map = {
-                    "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
-                    "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
-                    "⚓": "[#]", "→": ">", "🦓": "[ZB]",
-                    "⭐": "[$]"
-                }
-                fallback_text = fallback_map.get(text, "?")
-                big = fallback_font.render(fallback_text, antialias, color, background)
-            
-            if self._sc == 1.0:
-                return big
-            new_sz = (int(big.get_width()  * self._sc),
-                      int(big.get_height() * self._sc))
-            return pygame.transform.smoothscale(big, new_sz)
-            
-        # metodi utili, se vuoi: size, metrics, ecc.
-        @property
-        def size(self):                 # "virtual" size
-            return int(EMOJI_BASE_SIZE * self._sc)
+        class EmojiFont:
+            __slots__ = ("_ldr", "_sc")
+            def __init__(self, loader, scale):
+                self._ldr, self._sc = loader, scale
+                
+            def render(self, text, antialias, color, background=None):
+                try:
+                    big = self._ldr.render(text, antialias, color, background)
+                    if big.get_width() == 0 or big.get_height() == 0:
+                        raise pygame.error("Zero width/height emoji rendering")
+                except pygame.error:
+                    fallback_font = pygame.font.Font(font_emoji, int(EMOJI_BASE_SIZE * 0.6))
+                    fallback_map = {
+                        "🔊": "[ON]", "🔇": "[OFF]", "🍝": "[SP]", 
+                        "💩": "[MUD]", "❤": "<3>", "❄️": "[ICE]",
+                        "⚓": "[#]", "→": ">", "🦓": "[ZB]",
+                        "⭐": "[$]", "🏆": "[T]"
+                    }
+                    fallback_text = fallback_map.get(text, "?")
+                    big = fallback_font.render(fallback_text, antialias, color, background)
+                
+                if self._sc == 1.0:
+                    return big
+                new_sz = (int(big.get_width()  * self._sc),
+                          int(big.get_height() * self._sc))
+                return pygame.transform.smoothscale(big, new_sz)
+                
+            @property
+            def size(self):
+                return int(EMOJI_BASE_SIZE * self._sc)
 
-    return EmojiFont(loader, scale)
+        return EmojiFont(loader, scale)
+
 def get_pipe_spawn_time(speed, distance):
     """Calcola millisecondi necessari affinché una pipe percorra 'distance' pixel alla velocità 'speed'"""
     # speed = pixel/frame, 60 fps
