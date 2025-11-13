@@ -38,7 +38,14 @@ mud_sound       = get_resource_path('assets/mud.wav')
 ghost_sound     = get_resource_path('assets/ghost.wav')
 win_sound       = get_resource_path('assets/win.wav')
 font_emoji      = get_resource_path('assets/DejaVuSansMono.ttf')
-font_emoji_ext  = get_resource_path('assets/NotoColorEmoji.ttf')
+#font_emoji_ext  = get_resource_path('assets/NotoColorEmoji.ttf')
+
+import platform
+if platform.system() == 'Windows':
+    font_emoji_ext = get_resource_path('assets/TwitterColorEmoji-SVGinOT.ttf')
+else:
+    font_emoji_ext = get_resource_path('assets/NotoColorEmoji.ttf')
+# ==================================================================
 
 # ---------- config ----------
 EMOJI_SCALE = 0.25          # 1.0 = nativo, 0.25 → 1/4, 1.5 → +50 %
