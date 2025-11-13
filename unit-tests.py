@@ -43,6 +43,12 @@ class TestGameFilesExist(unittest.TestCase):
             'mud.wav',
             'ghost.wav',
             'win.wav',
+            'intro.mp3',
+            'setup.mp3',
+            'game.mp3',
+            'gameover.mp3',
+            'gamewin.mp3',
+            'NotoColorEmoji.ttf',
             'DejaVuSansMono.ttf'
         ]
         
@@ -364,12 +370,14 @@ class TestDrawShapeSelectionMenu(unittest.TestCase):
         current_shape = "circle"
         current_color = (0, 0, 0)
         debug_mode = False
-        audio_enabled = True
-        result = draw_shape_selection_menu(surface, bg_color, current_shape, current_color, debug_mode, audio_enabled)
+        sfx_enabled = True     # <-- MODIFICATO (era audio_enabled)
+        music_enabled = True   # <-- NUOVO
+        result = draw_shape_selection_menu(surface, bg_color, current_shape, current_color, 
+                                           debug_mode, sfx_enabled, music_enabled)  # <-- AGGIUNTO music_enabled
 
         # Verifica che la funzione non sollevi eccezioni e restituisca qualcosa
         self.assertIsInstance(result, tuple)
-        self.assertEqual(len(result), 4)  # 3 elementi come mostrato nel messaggio
+        self.assertEqual(len(result), 5)  # <-- MODIFICATO (era 4, ora 5: shape, color, debug, sfx, music)
 
 class TestDrawStartScreen(unittest.TestCase):
     def test_draw_start_screen_called(self):
@@ -1280,7 +1288,7 @@ class TestEmojiFont(unittest.TestCase):
         """Test rendering di vari emoji usati nel gioco"""
         font = emoji_font(24)
         
-        emoji_list = ["🔊", "🔇", "🍝", "💩", "❤", "❄️", "⚓", "🦓", "⭐", "🏆"]
+        emoji_list = ["🔊", "🔇", "🍝", "💩", "❤", "❄️", "⚓", "🦓", "⭐", "🏆", "🎵"]
         
         for emoji in emoji_list:
             with self.subTest(emoji=emoji):
@@ -1295,7 +1303,7 @@ class TestEmojiFont(unittest.TestCase):
         
         # Simula rendering che potrebbe fallire
         # Il fallback dovrebbe gestire questi emoji
-        fallback_emoji = ["🔊", "🔇", "🍝", "💩", "❤", "❄️", "⚓", "→", "🦓", "⭐", "🏆"]
+        fallback_emoji = ["🔊", "🔇", "🍝", "💩", "❤", "❄️", "⚓", "→", "🦓", "⭐", "🏆", "🎵"]
         
         for emoji in fallback_emoji:
             with self.subTest(emoji=emoji):
@@ -1312,6 +1320,89 @@ class TestEmojiFont(unittest.TestCase):
         
         # Dovrebbe avere dimensione basata sullo scale
         self.assertIsNotNone(font_scaled)
+
+# ============================================================================
+#                     TEST PER MUSIC MANAGER
+# ============================================================================
+
+class TestMusicManager(unittest.TestCase):
+    """Test per la classe MusicManager"""
+    
+    def setUp(self):
+        """Setup eseguito prima di ogni test"""
+        self.music_manager = MusicManager()
+    
+    def test_music_manager_initialization(self):
+        """Test che MusicManager si inizializzi correttamente"""
+        self.assertIsNotNone(self.music_manager)
+        self.assertTrue(self.music_manager.enabled)
+        self.assertEqual(self.music_manager.volume, 0.6)
+        self.assertIsNone(self.music_manager.current_track)
+        
+    def test_music_manager_has_all_tracks(self):
+        """Test che MusicManager contenga tutte le tracce"""
+        expected_tracks = ['intro', 'setup', 'game', 'gameover', 'gamewin']
+        for track in expected_tracks:
+            with self.subTest(track=track):
+                self.assertIn(track, self.music_manager.tracks)
+    
+    def test_music_manager_constants(self):
+        """Test che le costanti MusicManager siano definite correttamente"""
+        self.assertEqual(MusicManager.INTRO, 'intro')
+        self.assertEqual(MusicManager.SETUP, 'setup')
+        self.assertEqual(MusicManager.GAME, 'game')
+        self.assertEqual(MusicManager.GAMEOVER, 'gameover')
+        self.assertEqual(MusicManager.GAMEWIN, 'gamewin')
+    
+    def test_set_volume(self):
+        """Test che set_volume funzioni correttamente"""
+        self.music_manager.set_volume(0.8)
+        self.assertEqual(self.music_manager.volume, 0.8)
+        
+        # Test limiti
+        self.music_manager.set_volume(1.5)  # Oltre il max
+        self.assertEqual(self.music_manager.volume, 1.0)
+        
+        self.music_manager.set_volume(-0.5)  # Sotto il min
+        self.assertEqual(self.music_manager.volume, 0.0)
+    
+    def test_set_enabled(self):
+        """Test che set_enabled funzioni correttamente"""
+        self.music_manager.set_enabled(False)
+        self.assertFalse(self.music_manager.enabled)
+        
+        self.music_manager.set_enabled(True)
+        self.assertTrue(self.music_manager.enabled)
+    
+    def test_play_when_disabled(self):
+        """Test che play() non faccia nulla quando disabled"""
+        self.music_manager.set_enabled(False)
+        
+        # Non dovrebbe sollevare eccezioni
+        try:
+            self.music_manager.play(MusicManager.INTRO)
+            success = True
+        except Exception as e:
+            success = False
+        
+        self.assertTrue(success)
+
+class TestSetSfxVolume(unittest.TestCase):
+    """Test per la funzione set_sfx_volume"""
+    
+    def test_set_sfx_volume_exists(self):
+        """Test che set_sfx_volume esista"""
+        self.assertTrue(callable(set_sfx_volume))
+    
+    def test_set_sfx_volume_accepts_parameter(self):
+        """Test che set_sfx_volume accetti un parametro"""
+        try:
+            set_sfx_volume(0.5)
+            success = True
+        except TypeError:
+            success = False
+        
+        self.assertTrue(success, "set_sfx_volume() should accept volume parameter")
 
 class TestEdgeCases(unittest.TestCase):
     def test_bird_cannot_exceed_velocity_limit(self):
