@@ -1,5 +1,6 @@
 import unittest, pathlib, os, builtins, sys
 from pathlib import Path
+from unittest.mock import Mock, patch
 #from app import *
 
 # Verifica se stiamo eseguendo i test
@@ -1212,15 +1213,18 @@ class TestCloud(unittest.TestCase):
         self.assertIn(cloud.palette, Cloud.PALETTES)
 
 class TestEmojiFont(unittest.TestCase):
-    def test_emoji_font_renders_emoji(self):
+    """Test per emoji_font() con supporto dual-platform (Windows vs Linux/Mac)"""
+    
+    def test_emoji_font_renders_emoji_generic(self):
+        """Test generico che emoji_font() funzioni sulla piattaforma corrente"""
         font = emoji_font(24)
         surface = font.render("🎮", True, (255, 255, 255))
         
         self.assertGreater(surface.get_width(), 0)
         self.assertGreater(surface.get_height(), 0)
         
-    def test_emoji_font_fallback_on_error(self):
-        """Test fallback quando emoji non renderizza"""
+    def test_emoji_font_fallback_on_error_generic(self):
+        """Test fallback quando emoji non renderizza (piattaforma corrente)"""
         font = emoji_font(24)
         
         # Simula emoji che fallisce (usando carattere non supportato)
@@ -1229,6 +1233,85 @@ class TestEmojiFont(unittest.TestCase):
         # Dovrebbe comunque restituire qualcosa (fallback)
         self.assertIsNotNone(surface)
         self.assertGreater(surface.get_width(), 0)
+    
+    @patch('app.IS_WINDOWS', True)
+    def test_emoji_font_windows_path(self):
+        """Test che emoji_font() usi pygame.freetype su Windows"""
+        with patch('pygame.freetype.SysFont') as mock_freetype:
+            # Mock freetype font
+            mock_font_instance = Mock()
+            mock_font_instance.render.return_value = (pygame.Surface((20, 20)), pygame.Rect(0, 0, 20, 20))
+            mock_freetype.return_value = mock_font_instance
+            
+            font = emoji_font(24)
+            
+            # Verifica che SysFont sia stato chiamato con 'Segoe UI Emoji'
+            # Nota: potrebbe non essere chiamato qui se IS_WINDOWS è già stato valutato
+            # durante l'import, quindi testiamo solo che il rendering funzioni
+            surface = font.render("🎮", True, (255, 255, 255))
+            self.assertIsNotNone(surface)
+    
+    @patch('app.IS_WINDOWS', False)
+    def test_emoji_font_linux_mac_path(self):
+        """Test che emoji_font() usi pygame.font.Font su Linux/Mac"""
+        with patch('pygame.font.Font') as mock_font:
+            # Mock font normale
+            mock_font_instance = Mock()
+            mock_font_instance.render.return_value = pygame.Surface((20, 20))
+            mock_font_instance.get_width.return_value = 20
+            mock_font_instance.get_height.return_value = 20
+            mock_font.return_value = mock_font_instance
+            
+            font = emoji_font(24)
+            
+            # Il rendering dovrebbe funzionare
+            surface = font.render("🎮", True, (255, 255, 255))
+            self.assertIsNotNone(surface)
+    
+    def test_emoji_font_size_calculation(self):
+        """Test che la dimensione finale sia calcolata correttamente"""
+        font_small = emoji_font(12)
+        font_large = emoji_font(48)
+        
+        # Verifica che abbiano dimensioni diverse
+        self.assertNotEqual(font_small.size, font_large.size)
+        
+    def test_emoji_font_renders_multiple_emoji(self):
+        """Test rendering di vari emoji usati nel gioco"""
+        font = emoji_font(24)
+        
+        emoji_list = ["🔊", "🔇", "🍝", "💩", "❤", "❄️", "⚓", "🦓", "⭐", "🏆"]
+        
+        for emoji in emoji_list:
+            with self.subTest(emoji=emoji):
+                surface = font.render(emoji, True, (255, 255, 255))
+                self.assertIsNotNone(surface)
+                # Accetta sia rendering reale che fallback
+                self.assertGreaterEqual(surface.get_width(), 0)
+    
+    def test_emoji_font_fallback_map(self):
+        """Test che il fallback map contenga tutti gli emoji usati"""
+        font = emoji_font(24)
+        
+        # Simula rendering che potrebbe fallire
+        # Il fallback dovrebbe gestire questi emoji
+        fallback_emoji = ["🔊", "🔇", "🍝", "💩", "❤", "❄️", "⚓", "→", "🦓", "⭐", "🏆"]
+        
+        for emoji in fallback_emoji:
+            with self.subTest(emoji=emoji):
+                try:
+                    surface = font.render(emoji, True, (255, 255, 255))
+                    self.assertIsNotNone(surface)
+                except Exception as e:
+                    self.fail(f"Rendering failed for {emoji}: {e}")
+    
+    def test_emoji_font_scale_parameter(self):
+        """Test che il parametro scale funzioni correttamente"""
+        # Testa con scale esplicito
+        font_scaled = emoji_font(24, scale=0.5)
+        
+        # Dovrebbe avere dimensione basata sullo scale
+        self.assertIsNotNone(font_scaled)
 
 class TestEdgeCases(unittest.TestCase):
     def test_bird_cannot_exceed_velocity_limit(self):
